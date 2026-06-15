@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { GAME_WIDTH, GAME_HEIGHT, COLORS, CONFIG } from "../config";
-import { buildHouse } from "../house/sampleHouse";
+import { generateHouse } from "../gen/houseGenerator";
 import { playTick, playShhh, playGiggle } from "../audio/sfx";
 
 /**
@@ -82,7 +82,7 @@ export class CountdownScene extends Phaser.Scene {
     this.playBurhanHideSequence();
 
     // --- pick the hiding place while "eyes are closed" ---
-    const house = buildHouse();
+    const house = generateHouse();
     const roomsWithSpots = house.rooms.filter((r) => r.spots.length > 0);
     const room = Phaser.Utils.Array.GetRandom(roomsWithSpots);
     const spot = Phaser.Utils.Array.GetRandom(room.spots);
