@@ -15,6 +15,24 @@ export const CONFIG = {
   countdownSeconds: 10,
   /** Difficulty preset: gentle = obvious spots + strong escalating hints. */
   difficulty: "gentle" as "gentle" | "harder",
+
+  /**
+   * Wordless hint tuning. Kept deliberately subtle — a hint fires only every
+   * few seconds and often only by chance, so it nudges rather than gives it
+   * away. Turn these up for an easier game, down for harder.
+   */
+  hints: {
+    /** Seconds between hint opportunities (each may or may not fire). */
+    intervalMs: 4200,
+    /** Giggle loudness (0..1) when the player is in Burhan's room. */
+    inRoomGiggleIntensity: 0.4,
+    /** Chance (0..1) the correct spot does a peek wiggle, per opportunity. */
+    inRoomPeekChance: 0.3,
+    /** Base giggle loudness (0..1) for adjacent rooms, divided by distance. */
+    nearGiggleIntensity: 0.22,
+    /** How much each lost try strengthens hints (gentle escalation). */
+    escalationPerTry: 0.07,
+  },
 } as const;
 
 /** Shared palette so placeholder art and real art stay visually consistent. */

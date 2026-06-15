@@ -4,9 +4,11 @@ import { buildHouse } from "../house/sampleHouse";
 import { playTick, playShhh, playGiggle } from "../audio/sfx";
 
 /**
- * "Close your eyes" phase. Dark screen, a big numeral and a shrinking ring count
- * down from CONFIG.countdownSeconds. Meanwhile Burhan picks a random room + spot.
- * Numbers AND the ring are shown so a non-reader can still track the time.
+ * "Close your eyes" phase. A numeral + shrinking ring count down from
+ * CONFIG.countdownSeconds (numbers AND ring so a non-reader can track time).
+ * Burhan walks on, looks around, and dashes off-screen to hide — he runs off
+ * the edge, so the real hiding spot is never revealed. Meanwhile the game
+ * secretly picks his room + spot.
  */
 export class CountdownScene extends Phaser.Scene {
   constructor() {
@@ -15,23 +17,21 @@ export class CountdownScene extends Phaser.Scene {
 
   create() {
     const cx = GAME_WIDTH / 2;
-    const cy = GAME_HEIGHT / 2;
+    const ringCy = GAME_HEIGHT * 0.3;
 
     this.cameras.main.setBackgroundColor(0x0a0612);
     this.cameras.main.fadeIn(300, 0, 0, 0);
 
-    playShhh();
-    this.time.delayedCall(350, () => playGiggle(0.7));
-
     const total = CONFIG.countdownSeconds;
     let remaining = total;
 
-    const ringRadius = 220;
-    const ring = this.add.graphics({ x: cx, y: cy });
+    // --- timer ring + numeral ---
+    const ringRadius = 170;
+    const ring = this.add.graphics({ x: cx, y: ringCy });
     const numeral = this.add
-      .text(cx, cy, String(remaining), {
+      .text(cx, ringCy, String(remaining), {
         fontFamily: "Arial, sans-serif",
-        fontSize: "200px",
+        fontSize: "150px",
         color: "#ffffff",
         fontStyle: "bold",
       })
@@ -39,9 +39,9 @@ export class CountdownScene extends Phaser.Scene {
 
     const drawRing = (frac: number) => {
       ring.clear();
-      ring.lineStyle(20, 0x33264d, 1);
+      ring.lineStyle(18, 0x33264d, 1);
       ring.strokeCircle(0, 0, ringRadius);
-      ring.lineStyle(20, COLORS.play, 1);
+      ring.lineStyle(18, COLORS.play, 1);
       ring.beginPath();
       ring.arc(
         0,
@@ -54,8 +54,6 @@ export class CountdownScene extends Phaser.Scene {
       ring.strokePath();
     };
     drawRing(1);
-
-    // Smoothly shrink the ring over the whole countdown.
     this.tweens.addCounter({
       from: 1,
       to: 0,
@@ -63,7 +61,6 @@ export class CountdownScene extends Phaser.Scene {
       onUpdate: (t) => drawRing(t.getValue() ?? 0),
     });
 
-    // Tick + numeral once per second.
     playTick();
     this.time.addEvent({
       delay: 1000,
@@ -73,7 +70,7 @@ export class CountdownScene extends Phaser.Scene {
         numeral.setText(String(Math.max(remaining, 0)));
         this.tweens.add({
           targets: numeral,
-          scale: { from: 1.25, to: 1 },
+          scale: { from: 1.2, to: 1 },
           duration: 250,
           ease: "Quad.out",
         });
@@ -81,7 +78,10 @@ export class CountdownScene extends Phaser.Scene {
       },
     });
 
-    // Pick Burhan's hiding place while eyes are closed.
+    // --- Burhan: walk in, look around, run off to hide ---
+    this.playBurhanHideSequence();
+
+    // --- pick the hiding place while "eyes are closed" ---
     const house = buildHouse();
     const roomsWithSpots = house.rooms.filter((r) => r.spots.length > 0);
     const room = Phaser.Utils.Array.GetRandom(roomsWithSpots);
@@ -95,6 +95,72 @@ export class CountdownScene extends Phaser.Scene {
           hideRoomId: room.id,
           hideSpotId: spot.id,
         });
+      });
+    });
+  }
+
+  private playBurhanHideSequence() {
+    const cx = GAME_WIDTH / 2;
+    const floorY = GAME_HEIGHT * 0.66;
+
+    const burhan = this.add.image(-160, floorY, "burhan").setScale(0.7);
+
+    // Continuous little walk/run bob; sped up when he bolts, stopped when gone.
+    const bob = this.tweens.add({
+      targets: burhan,
+      y: floorY - 18,
+      duration: 260,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.inOut",
+    });
+
+    // 1) Walk in to centre.
+    this.tweens.add({
+      targets: burhan,
+      x: cx,
+      duration: 1600,
+      ease: "Sine.inOut",
+    });
+    this.time.delayedCall(400, () => playGiggle(0.4));
+
+    // 2) Look around (tilt left/right as if scoping out a spot).
+    this.time.delayedCall(1700, () => {
+      this.tweens.add({
+        targets: burhan,
+        angle: { from: -12, to: 12 },
+        duration: 380,
+        yoyo: true,
+        repeat: 1,
+        ease: "Sine.inOut",
+        onComplete: () => {
+          burhan.angle = 0;
+        },
+      });
+    });
+
+    // 3) Bolt off-screen to hide.
+    this.time.delayedCall(3300, () => {
+      playShhh();
+      bob.timeScale = 2.4;
+      burhan.setFlip(false, false);
+      this.tweens.add({
+        targets: burhan,
+        angle: 16,
+        duration: 150,
+        ease: "Quad.out",
+      });
+      this.tweens.add({
+        targets: burhan,
+        x: GAME_WIDTH + 220,
+        scale: 0.55,
+        duration: 1100,
+        ease: "Quad.in",
+        onComplete: () => {
+          bob.stop();
+          burhan.setVisible(false);
+          playGiggle(0.5); // a last giggle once he's hidden
+        },
       });
     });
   }

@@ -99,10 +99,10 @@ export class HidingSpotView {
     if (this.peekTween || this.checked) return;
     this.peekTween = scene.tweens.add({
       targets: this.container,
-      angle: { from: -2.5, to: 2.5 },
-      duration: 140,
+      angle: { from: -1.5, to: 1.5 },
+      duration: 160,
       yoyo: true,
-      repeat: 3,
+      repeat: 1,
       ease: "Sine.inOut",
       onComplete: () => {
         this.container.angle = 0;

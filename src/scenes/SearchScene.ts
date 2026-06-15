@@ -238,11 +238,11 @@ export class SearchScene extends Phaser.Scene {
     }
   }
 
-  // ---- hints (light version; M4 expands) ------------------------------------
+  // ---- hints (subtle; M4 expands) -------------------------------------------
   private scheduleHints() {
     this.hintTimer?.remove();
     this.hintTimer = this.time.addEvent({
-      delay: 1900,
+      delay: CONFIG.hints.intervalMs,
       loop: true,
       callback: () => this.emitHint(),
     });
@@ -250,19 +250,26 @@ export class SearchScene extends Phaser.Scene {
 
   private emitHint() {
     if (this.roundOver) return;
+    const h = CONFIG.hints;
     const room = roomById(this.house, this.currentRoomId);
     const dist = roomDistance(this.house, this.currentRoomId, this.hideRoomId);
 
-    // Escalate as tries run low so a young child always closes in.
-    const escalation = 1 + (CONFIG.maxTries - this.triesLeft) * 0.15;
+    // Gentle escalation as tries run low so a young child still closes in.
+    const escalation = 1 + (CONFIG.maxTries - this.triesLeft) * h.escalationPerTry;
 
     if (dist === 0) {
-      playGiggle(Math.min(1, 0.9 * escalation), 0);
-      const correct = this.spotViews.find((v) => v.spot.id === this.hideSpotId);
-      correct?.startPeek(this);
+      playGiggle(Math.min(0.8, h.inRoomGiggleIntensity * escalation), 0);
+      // Only sometimes show the peek, so it's a treat rather than a giveaway.
+      if (Math.random() < h.inRoomPeekChance * escalation) {
+        const correct = this.spotViews.find((v) => v.spot.id === this.hideSpotId);
+        correct?.startPeek(this);
+      }
     } else if (Number.isFinite(dist)) {
-      const intensity = Math.min(1, (0.55 / dist) * escalation);
-      playGiggle(intensity, this.panTowardBurhan(room));
+      // Farther rooms giggle less often and more softly.
+      if (Math.random() < Math.min(0.7, 0.7 / dist)) {
+        const intensity = Math.min(0.6, (h.nearGiggleIntensity / dist) * escalation);
+        playGiggle(intensity, this.panTowardBurhan(room));
+      }
     }
   }
 
