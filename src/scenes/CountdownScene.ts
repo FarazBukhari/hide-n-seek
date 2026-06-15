@@ -103,7 +103,7 @@ export class CountdownScene extends Phaser.Scene {
     const cx = GAME_WIDTH / 2;
     const floorY = GAME_HEIGHT * 0.72;
 
-    const burhan = this.add.image(-160, floorY, "burhan").setScale(0.7);
+    const burhan = this.add.image(-160, floorY, "burhan").setScale(0.6);
 
     // Continuous little walk/run bob; sped up when he bolts, stopped when gone.
     const bob = this.tweens.add({
@@ -153,7 +153,7 @@ export class CountdownScene extends Phaser.Scene {
       this.tweens.add({
         targets: burhan,
         x: GAME_WIDTH + 220,
-        scale: 0.55,
+        scale: 0.48,
         duration: 1100,
         ease: "Quad.in",
         onComplete: () => {

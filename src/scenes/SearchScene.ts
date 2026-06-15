@@ -211,7 +211,7 @@ export class SearchScene extends Phaser.Scene {
     const burhan = this.add.image(p.x, p.y, "burhan").setScale(0).setDepth(20);
     this.tweens.add({
       targets: burhan,
-      scale: 0.62,
+      scale: 0.5,
       duration: 380,
       ease: "Back.out",
     });
@@ -241,7 +241,7 @@ export class SearchScene extends Phaser.Scene {
         const burhan = this.add.image(p.x, p.y, "burhan").setScale(0).setDepth(20);
         this.tweens.add({
           targets: burhan,
-          scale: 0.62,
+          scale: 0.5,
           duration: 380,
           ease: "Back.out",
         });

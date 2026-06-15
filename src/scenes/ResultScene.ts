@@ -21,7 +21,7 @@ export class ResultScene extends Phaser.Scene {
 
     const burhan = this.add
       .image(cx, GAME_HEIGHT * 0.36, "burhan")
-      .setScale(0.85);
+      .setScale(0.62);
 
     if (data.found) {
       playFound();

@@ -17,7 +17,7 @@ export class TitleScene extends Phaser.Scene {
     const cx = GAME_WIDTH / 2;
 
     // Waving Burhan.
-    const burhan = this.add.image(cx, GAME_HEIGHT * 0.33, "burhan");
+    const burhan = this.add.image(cx, GAME_HEIGHT * 0.34, "burhan").setScale(0.7);
     burhan.setOrigin(0.5, 0.5);
     this.tweens.add({
       targets: burhan,
