@@ -1,211 +1,124 @@
-# Where's Burhan — Game Plan
+# Where's Burhan? — Game Plan
 
 A hide-and-seek game for a 4–5 year old. The player closes their eyes while
 **Burhan** hides somewhere in a procedurally generated house, then searches
 room by room to find him. **No text anywhere** — the game is driven entirely by
 pictures, animation, and sound.
 
+The repo is a clean start: nothing built yet, on branch
+`claude/wheres-burhan-game-plan-30gn7s`.
+
 ---
 
-## 1. Core design decisions
+## Tech stack (chosen for phone-first deploy & testing)
 
-### 2D, not 3D
-We'll build this in **2D**. Reasons:
-- A 4–5 year old reads pictures, not perspective. Flat, bright, cartoon rooms
-  are instantly legible; tapping a cupboard to open it is obvious.
-- 2D is far cheaper to build, animate, and procedurally generate.
-- Runs smoothly on any phone with tiny download size and battery cost.
-- The hint mechanic (a peeking elbow, a wobbling curtain, a giggle) is much
-  easier to read clearly in 2D.
-
-3D would multiply the art, performance, and dev cost for no real benefit to the
-target player.
-
-### Tech stack
-| Layer | Choice | Why |
+| Decision | Choice | Why |
 |---|---|---|
-| Engine | **Phaser 3** | Purpose-built 2D web game engine: sprites, frame animation, audio, tap/touch input, scene management. |
-| Language/build | **Vite + TypeScript** | Instant hot-reload dev, tiny output, one-command build. Types catch mistakes early. |
-| Web hosting (testing) | **GitHub Pages** via GitHub Actions | Every push auto-deploys a URL you can open on your phone in seconds. Fastest possible test loop from the Claude Code phone app. |
-| **Android APK** | **Capacitor** | Wraps the exact same web build into a native Android app and produces an `.apk`/`.aab`. One codebase → web + Android. |
-| APK CI | GitHub Actions (Android build job) | Produces a downloadable APK artifact on each release tag — no local Android Studio needed. |
+| Dimension | **2D, hand-illustrated cartoon style** | A drawn likeness of a 4–5 yr old reads as warm and charming; 3D would need modeling/rigging and a likeness is far harder to nail. 2D also runs smoothly on any phone. |
+| Engine | **Phaser 3** | Purpose-built 2D web game engine: sprites, frame animation, audio, tap/touch input, and scene management (countdown vs. search) all built in. |
+| Build/dev | **Vite + TypeScript** | Instant builds, tiny output, one command to ship. |
+| Hosting | **GitHub Pages via GitHub Actions** | This is the key to your phone workflow: I push to the branch → an Action auto-builds and deploys → you open one URL on your phone to play the latest version. No app store, no local server, no cables. |
 
-**Why this combo:** you get an instant web URL to test on the phone during
-development *and* a real Android APK as the final deliverable, from a single
-TypeScript codebase. This directly serves "easy to deploy and test on a phone"
-plus "the end goal is an Android APK."
+**Your loop:** I push → GitHub builds it → you open the Pages link in your phone
+browser → tap "Add to Home Screen" so it feels like a real app (full-screen,
+works offline via PWA).
 
 ---
 
-## 2. Game flow (state machine)
+## Game structure (Phaser scenes)
 
-```
-Boot ──> Preload ──> Title ──> Countdown ──> Search ──> Result ──┐
-                       ^                                          │
-                       └──────────── (play again) ───────────────┘
-```
-
-1. **Boot / Preload** — load sprites, audio, fonts (icon font only, no words).
-2. **Title** — big animated Burhan, a single pulsing ▶ Play button. Tap to start.
-3. **Countdown** ("close your eyes")
-   - Screen goes dark/blank.
-   - A large **10 → 0** countdown shown as *dots/numerals as pictures* plus a
-     ticking sound. (Numbers 0–10 are fine even for non-readers; we can also use
-     shrinking dots to be safe.)
-   - During this time the game **picks a random hiding spot** for Burhan.
-4. **Search**
-   - One room shown at a time.
-   - Player taps **hiding spots** (cupboard, under bed, behind curtain, etc.) to
-     check them. Each opens with an animation.
-   - Player **navigates** between rooms by tapping doors / corridor arrows.
-   - Limited number of "checks" (default **3 wrong checks** before the round ends
-     — tunable). A row of hearts/star icons shows tries left (picture, no text).
-   - Burhan emits **hints** (see §4).
-5. **Result**
-   - **Found:** Burhan pops out laughing, confetti, happy music, hug animation.
-   - **Out of tries:** Burhan pops out from his spot waving (gentle, not a
-     "you lose" — keep it warm), then back to Title.
-
-All transitions are tap-driven with audio feedback. No reading required.
+1. **Boot/Loading** — loads art + sounds, shows an animated spinner (no text).
+2. **Title** — Burhan waving, a big green ▶ play button. Tap to start.
+3. **Hide phase ("close your eyes")** — screen goes dark, large countdown
+   10 → 0 (numerals only, plus a shrinking ring so non-readers track it too).
+   Behind the scenes the game picks a random room + hiding spot. A gentle "shhh"
+   + giggle plays.
+4. **Seek phase** — one room shown at a time. Tap hiding spots to check them; tap
+   doors/arrows to move between rooms. Limited tries (start at **5**, tunable).
+5. **Found! / Out of tries** — celebration: confetti, Burhan jumps out laughing,
+   happy music. No "win/lose" text — just joyful vs. a gentle "aww, try again"
+   animation. Auto-offer a new round.
 
 ---
 
-## 3. Procedural house generation
+## Procedural house generation
 
-Goal: a different house most rounds, with a guaranteed-solvable layout.
-
-**Approach — room graph + furnished rooms:**
-1. **Layout generator** builds a small connected graph of rooms (e.g. 3–6 rooms:
-   bedroom, kitchen, living room, bathroom, hallway). Rooms are nodes; doors are
-   edges. Guarantee the graph is connected so every room is reachable.
-2. **Room templates** — each room type has a hand-made background and a set of
-   **hiding-spot slots** (e.g. bedroom: under-bed, wardrobe, toy chest, curtain).
-   The generator randomly enables a subset and positions Burhan-sized props.
-3. **Hiding spot selection** — at countdown, pick one valid spot across the whole
-   house at random (weighted so it's age-appropriate — not *too* obscure).
-4. **Seeded RNG** — each round gets a seed so a layout is reproducible for
-   debugging and we can guarantee variety (avoid repeating the last few seeds).
-
-If full procedural generation proves finicky early on, the fallback is a library
-of **several hand-authored houses** chosen at random — same player experience,
-less generation code. We'll start with a small procedural generator and a couple
-of templates per room, which already yields high variety.
+- A house = a small grid of rooms (e.g. 4–6 rooms: living room, bedroom,
+  kitchen, bathroom, hallway), connected by doors.
+- Each room is assembled from modular furniture pieces (sofa, bed, curtains,
+  cupboard, toy box, plant…), each tagged as a possible hiding spot.
+- Each round: randomize which rooms appear, their layout, furniture placement,
+  and which spot Burhan picks. With ~6 room templates × randomized furniture,
+  every round feels different even before we hand-draw more.
+- We start with a solid set of hand-built room templates and layered randomness;
+  if we want truly infinite variety later we can add more generators.
 
 ---
 
-## 4. Hint system (NO TEXT, child-friendly)
+## Hint system — fully wordless (the fun part)
 
-Hints escalate over time / with wrong guesses so the child always eventually wins:
+Layering several non-text hints so a 4–5 yr old always has a clue:
 
-- **Audio giggle, directional & by proximity** — Burhan laughs periodically. The
-  laugh is **louder / more frequent the closer the current room is** to his
-  hiding room. Quiet & rare when far, excited when you're in the right room.
-- **Brief "peek" animation** — every so often the correct hiding spot does a
-  tiny tell: a curtain wobbles, an elbow/foot pokes out for ~0.5s, the wardrobe
-  door jiggles. Only the *correct* spot does this.
-- **Warm/cold glow** — optional gentle highlight: the room gets a faint warm tint
-  when Burhan is in it, cool when not. (Color-only, no words.)
-- **Escalation:** after each wrong check, hints get stronger (more frequent
-  giggles, bigger peek) so a young child isn't stuck.
-
-We'll make hint intensity and the number-of-tries values **config constants** so
-they're easy to tune once you playtest with Burhan's family.
-
----
-
-## 5. Art & audio assets
-
-### Burhan likeness
-- You'll provide photos. We'll create an **animated cartoon sprite** of him:
-  a small, friendly 2D character with a few animations (idle, peek, giggle,
-  pop-out/celebrate, run between rooms).
-- Until photos arrive, we build with a **placeholder kid sprite** so all the
-  mechanics work; swapping in the real Burhan art is then a drop-in asset change.
-- Art produced as a **sprite sheet** (PNG + atlas JSON) — standard Phaser format.
-
-### Other art
-- Bright, simple room backgrounds (one per room type, a couple of variants).
-- Hiding-spot props with open/closed + "peek" frames.
-- Icon-only UI: Play ▶, hearts/tries, replay ↻.
-
-### Audio
-- Burhan giggle/laugh set, "found you!" sting, gentle ticking for countdown,
-  happy win music, soft ambient. All royalty-free or original; no spoken words.
+- **Laughter proximity / "warmer–colder":** giggles get louder and more frequent
+  the closer the player is to the right room and spot; quieter/sparser when far.
+  This is the primary hint.
+- **Micro-peeks:** every few seconds the hiding spot Burhan is in does a tiny
+  tell — a curtain sways, a cupboard door jiggles, a foot pokes out for a split
+  second, then hides again.
+- **Spatial audio nudge:** a soft directional giggle hints which door to go
+  through (pan left/right).
+- **Escalating help:** if the player is struggling (tries running low), hints get
+  more obvious so it always ends happily.
+- **Tap feedback:** checking a wrong spot gives a soft "nope" bounce + sound; the
+  right one triggers the big reveal.
 
 ---
 
-## 6. Project structure (proposed)
+## Art & Burhan likeness pipeline
 
-```
-wheres-burhan/
-├─ index.html
-├─ package.json
-├─ vite.config.ts
-├─ tsconfig.json
-├─ capacitor.config.ts          # Android wrapper config
-├─ android/                     # generated by Capacitor
-├─ public/assets/               # sprites, audio, atlases
-├─ src/
-│  ├─ main.ts                   # Phaser game bootstrap
-│  ├─ config.ts                 # tunables: tries, hint intensity, timer
-│  ├─ scenes/
-│  │  ├─ BootScene.ts
-│  │  ├─ PreloadScene.ts
-│  │  ├─ TitleScene.ts
-│  │  ├─ CountdownScene.ts
-│  │  ├─ SearchScene.ts
-│  │  └─ ResultScene.ts
-│  ├─ gen/
-│  │  ├─ houseGenerator.ts      # room graph + furnishing
-│  │  └─ roomTemplates.ts
-│  ├─ systems/
-│  │  ├─ hintSystem.ts
-│  │  └─ rng.ts                 # seeded random
-│  └─ objects/
-│     ├─ Burhan.ts
-│     └─ HidingSpot.ts
-└─ .github/workflows/
-   ├─ deploy-pages.yml          # web → GitHub Pages on push
-   └─ build-apk.yml             # APK artifact on tag/manual
-```
+- I'll build everything first with **placeholder cartoon art** so the game is
+  fully playable immediately.
+- When you send photos, I'll create an **animated-style Burhan**: a base sprite
+  plus a few poses (peeking, giggling, jumping out, waving) and swap him in.
+  Everything's structured so the art swap is a drop-in.
+- **Audio:** gentle kid-friendly giggles, "shhh", tap blips, win fanfare —
+  sourced from royalty-free/CC0 libraries.
 
 ---
 
-## 7. Roadmap / milestones
+## Milestones
 
-**M1 — Skeleton & deploy pipeline**
-- Vite + Phaser + TS project, Title → Countdown → Search → Result scenes wired
-  with placeholder art.
-- GitHub Pages auto-deploy working → you get a live phone-testable URL.
-
-**M2 — Core loop (one hand-made house)**
-- Single furnished house, tap hiding spots, win/lose, tries counter.
-- Countdown with eyes-closed blank screen + random hiding spot.
-
-**M3 — Hints**
-- Proximity giggles + peek animations + escalation. Playtest feel.
-
-**M4 — Procedural houses**
-- Room-graph generator + room templates for variety each round.
-
-**M5 — Burhan art pass**
-- Swap placeholder for the real animated Burhan sprite from your photos.
-- Audio pass (giggles, music, SFX).
-
-**M6 — Android APK**
-- Add Capacitor, configure Android, CI job producing a downloadable APK.
-- Icon, splash, app name. Sideload-test on a phone.
-
-Each milestone is independently testable on your phone via the Pages URL.
+- **M1 – Skeleton & deploy:** Vite+Phaser+TS project, GitHub Pages Action, PWA
+  shell. You get a live URL on day one (placeholder visuals).
+- **M2 – Core loop:** countdown → seek → found, with one house and tappable
+  hiding spots.
+- **M3 – Procedural houses:** room templates + randomized furniture/spots +
+  room-to-room navigation.
+- **M4 – Hint system:** laughter proximity, micro-peeks, escalating help.
+- **M5 – Polish:** Burhan likeness, sound design, celebration effects, difficulty
+  tuning.
 
 ---
 
-## 8. Open questions for you
-1. **Tries:** default to **3 wrong checks** per round? (Easy to change.)
+## Android APK (your stated end goal — to confirm)
+
+Your liked plan above ships as a **web app / PWA** on GitHub Pages, which is the
+fastest test loop. Your opening message said the *end goal* is an Android APK.
+These aren't in conflict — the standard path is to wrap the same web build with
+**Capacitor** to produce an `.apk`, with a GitHub Actions job building it on
+demand. We'd add this as a final step **after M5** without changing anything
+above. Flagged here so you can decide whether to include the APK track now or
+keep it pure-web for now (see questions below).
+
+---
+
+## A few choices I'd like your call on before I build
+
+1. **Tries:** start at **5** wrong checks per round (tunable)?
 2. **Countdown length:** keep at **10s**, or shorter for a young child?
-3. **Numbers on screen:** OK to show numerals 10→0, or prefer purely
-   picture-based (shrinking dots) since he can't read yet?
-4. **APK distribution:** just sideload the APK to family phones, or eventually
-   Google Play? (Affects signing setup later — not needed for M1–M5.)
-5. **Photos of Burhan:** how will you share them (commit to repo / link)? We can
-   start building immediately with a placeholder regardless.
+3. **Android APK:** add the Capacitor/APK track (after M5), or stay web/PWA only
+   for now?
+4. **Difficulty:** gentle (obvious hiding spots, strong escalating hints) to
+   start?
+5. **Photos of Burhan:** how will you share them? We build with a placeholder
+   meanwhile, so this doesn't block anything.
