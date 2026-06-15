@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from "../config";
+import { unlock } from "../audio/sfx";
 
 /**
  * Title screen: a waving Burhan and a big pulsing ▶ play button. Fully wordless.
@@ -36,17 +37,8 @@ export class TitleScene extends Phaser.Scene {
     circle.fillCircle(0, 8, radius);
     circle.fillStyle(COLORS.play, 1);
     circle.fillCircle(0, 0, radius);
-    const triangle = this.add.triangle(
-      14,
-      0,
-      -40,
-      -55,
-      -40,
-      55,
-      55,
-      0,
-      COLORS.text,
-    );
+    // Play triangle, geometry centered within the circle.
+    const triangle = this.add.triangle(0, 0, -28, -48, -28, 48, 54, 0, COLORS.text);
     button.add([circle, triangle]);
     button.setSize(radius * 2, radius * 2);
     button.setInteractive({ useHandCursor: true });
@@ -63,15 +55,18 @@ export class TitleScene extends Phaser.Scene {
 
     button.on("pointerdown", () => {
       button.disableInteractive();
+      unlock(); // first user gesture: enable Web Audio
       this.tweens.add({
         targets: burhan,
         y: burhan.y - 60,
-        duration: 220,
+        duration: 200,
         yoyo: true,
         ease: "Quad.out",
-        onComplete: () => button.setInteractive({ useHandCursor: true }),
       });
-      // M2: this.scene.start("Countdown");
+      this.cameras.main.fadeOut(280, 0, 0, 0);
+      this.cameras.main.once("camerafadeoutcomplete", () =>
+        this.scene.start("Countdown"),
+      );
     });
   }
 }
