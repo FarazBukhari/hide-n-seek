@@ -20,8 +20,8 @@ export class ResultScene extends Phaser.Scene {
     this.cameras.main.fadeIn(250, 0, 0, 0);
 
     const burhan = this.add
-      .image(cx, GAME_HEIGHT * 0.4, "burhan")
-      .setScale(0.9);
+      .image(cx, GAME_HEIGHT * 0.36, "burhan")
+      .setScale(0.85);
 
     if (data.found) {
       playFound();
@@ -89,8 +89,8 @@ export class ResultScene extends Phaser.Scene {
 
   private makePlayButton() {
     const cx = GAME_WIDTH / 2;
-    const btnY = GAME_HEIGHT * 0.78;
-    const radius = 100;
+    const btnY = GAME_HEIGHT * 0.8;
+    const radius = 88;
     const button = this.add.container(cx, btnY);
     const circle = this.add.graphics();
     circle.fillStyle(COLORS.playDark, 1);

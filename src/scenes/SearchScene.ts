@@ -28,6 +28,7 @@ export class SearchScene extends Phaser.Scene {
   private currentRoomId!: string;
   private triesLeft = CONFIG.maxTries;
   private roundOver = false;
+  private transitioning = false;
 
   private roomLayer!: Phaser.GameObjects.Container;
   private spotViews: HidingSpotView[] = [];
@@ -45,6 +46,7 @@ export class SearchScene extends Phaser.Scene {
     this.currentRoomId = this.house.startRoomId;
     this.triesLeft = CONFIG.maxTries;
     this.roundOver = false;
+    this.transitioning = false;
     this.spotViews = [];
     this.stars = [];
 
@@ -56,7 +58,7 @@ export class SearchScene extends Phaser.Scene {
 
   // ---- tries display (stars, no text) ---------------------------------------
   private drawTries() {
-    const y = 90;
+    const y = 64;
     const gap = 96;
     const startX = GAME_WIDTH / 2 - (gap * (CONFIG.maxTries - 1)) / 2;
     for (let i = 0; i < CONFIG.maxTries; i++) {
@@ -91,9 +93,9 @@ export class SearchScene extends Phaser.Scene {
     );
     const floor = this.add.rectangle(
       GAME_WIDTH / 2,
-      GAME_HEIGHT - 180,
+      GAME_HEIGHT - 150,
       GAME_WIDTH,
-      360,
+      300,
       Phaser.Display.Color.IntegerToColor(room.bgColor).darken(25).color,
     );
     this.roomLayer.add([bg, floor]);
@@ -115,8 +117,8 @@ export class SearchScene extends Phaser.Scene {
   }
 
   private makeDoorArrow(side: "left" | "right", toRoomId: string) {
-    const x = side === "left" ? 70 : GAME_WIDTH - 70;
-    const y = GAME_HEIGHT * 0.42;
+    const x = side === "left" ? 80 : GAME_WIDTH - 80;
+    const y = GAME_HEIGHT * 0.45;
     const dir = side === "left" ? -1 : 1;
     const c = this.add.container(x, y);
     const g = this.add.graphics();
@@ -139,11 +141,13 @@ export class SearchScene extends Phaser.Scene {
       ease: "Sine.inOut",
     });
     c.on("pointerdown", () => {
-      if (this.roundOver) return;
+      if (this.roundOver || this.transitioning) return;
+      this.transitioning = true;
       this.cameras.main.fadeOut(180, 0, 0, 0);
       this.cameras.main.once("camerafadeoutcomplete", () => {
         this.cameras.main.fadeIn(180, 0, 0, 0);
         this.enterRoom(toRoomId);
+        this.transitioning = false;
       });
     });
     return c;
@@ -151,11 +155,14 @@ export class SearchScene extends Phaser.Scene {
 
   // ---- checking a spot ------------------------------------------------------
   private checkSpot(view: HidingSpotView) {
-    if (this.roundOver || view.checked) return;
+    if (this.roundOver || this.transitioning || view.checked) return;
     const isCorrect =
       this.currentRoomId === this.hideRoomId && view.spot.id === this.hideSpotId;
 
     void view.open(this).then(() => {
+      // The open animation takes a moment; another spot may have ended the
+      // round in the meantime, so re-check before acting.
+      if (this.roundOver) return;
       if (isCorrect) {
         this.win(view);
       } else {
@@ -237,6 +244,9 @@ export class SearchScene extends Phaser.Scene {
   // ---- hints (subtle; M4 expands) -------------------------------------------
   private scheduleHints() {
     this.hintTimer?.remove();
+    // Don't re-arm once the round is over (e.g. the lose() reveal re-enters a
+    // room).
+    if (this.roundOver) return;
     this.hintTimer = this.time.addEvent({
       delay: CONFIG.hints.intervalMs,
       loop: true,

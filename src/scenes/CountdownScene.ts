@@ -17,7 +17,7 @@ export class CountdownScene extends Phaser.Scene {
 
   create() {
     const cx = GAME_WIDTH / 2;
-    const ringCy = GAME_HEIGHT * 0.3;
+    const ringCy = GAME_HEIGHT * 0.32;
 
     this.cameras.main.setBackgroundColor(0x0a0612);
     this.cameras.main.fadeIn(300, 0, 0, 0);
@@ -26,12 +26,12 @@ export class CountdownScene extends Phaser.Scene {
     let remaining = total;
 
     // --- timer ring + numeral ---
-    const ringRadius = 170;
+    const ringRadius = 140;
     const ring = this.add.graphics({ x: cx, y: ringCy });
     const numeral = this.add
       .text(cx, ringCy, String(remaining), {
         fontFamily: "Arial, sans-serif",
-        fontSize: "150px",
+        fontSize: "120px",
         color: "#ffffff",
         fontStyle: "bold",
       })
@@ -101,7 +101,7 @@ export class CountdownScene extends Phaser.Scene {
 
   private playBurhanHideSequence() {
     const cx = GAME_WIDTH / 2;
-    const floorY = GAME_HEIGHT * 0.66;
+    const floorY = GAME_HEIGHT * 0.72;
 
     const burhan = this.add.image(-160, floorY, "burhan").setScale(0.7);
 

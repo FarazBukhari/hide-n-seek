@@ -94,6 +94,9 @@ Layering several non-text hints so a 4–5 yr old always has a clue:
   hiding spots.
 - **M3 – Procedural houses:** room templates + randomized furniture/spots +
   room-to-room navigation.
+- **M3.5 – Landscape:** game runs in landscape (1280×720) with 5 furniture
+  lanes per room, so each room holds more furniture. Vitest unit tests cover
+  the generator + room-distance logic; CI runs them before deploy.
 - **M4 – Hint system:** laughter proximity, micro-peeks, escalating help.
 - **M5 – Polish:** Burhan likeness, sound design, celebration effects, difficulty
   tuning.

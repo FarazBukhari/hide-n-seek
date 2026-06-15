@@ -2,6 +2,7 @@ import type { House, Room, HidingSpot, Door } from "../house/types";
 import {
   ROOM_TEMPLATES,
   LANE_X,
+  ALL_LANES,
   type Lane,
   type RoomTemplate,
   type SlotTemplate,
@@ -15,7 +16,8 @@ import { Rng, nextSeed } from "./rng";
 
 const MIN_ROOMS = 4;
 const MAX_ROOMS = 6;
-const ALL_LANES: Lane[] = ["L", "C", "R"];
+const MIN_SPOTS = 3;
+const MAX_SPOTS = 4;
 
 /** Pick room types, avoiding the same type twice in a row so neighbours differ. */
 function pickTypes(rng: Rng, count: number): RoomTemplate[] {
@@ -43,7 +45,7 @@ function genSpots(rng: Rng, roomId: string, template: RoomTemplate): HidingSpot[
   }
 
   const availableLanes = rng.shuffle(ALL_LANES.filter((l) => byLane.has(l)));
-  const count = Math.min(availableLanes.length, rng.int(2, 3));
+  const count = Math.min(availableLanes.length, rng.int(MIN_SPOTS, MAX_SPOTS));
 
   const spots: HidingSpot[] = [];
   for (let i = 0; i < count; i++) {

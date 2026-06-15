@@ -20,7 +20,7 @@ export default defineConfig({
         theme_color: "#1a1030",
         background_color: "#1a1030",
         display: "fullscreen",
-        orientation: "portrait",
+        orientation: "landscape",
         icons: [
           {
             src: "icons/icon-192.png",

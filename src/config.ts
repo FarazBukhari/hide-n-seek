@@ -3,9 +3,9 @@
 // after playtesting with Burhan's family — no hunting through scene code.
 // ---------------------------------------------------------------------------
 
-/** Logical design resolution (portrait phone). Phaser scales this to fit. */
-export const GAME_WIDTH = 720;
-export const GAME_HEIGHT = 1280;
+/** Logical design resolution (landscape phone). Phaser scales this to fit. */
+export const GAME_WIDTH = 1280;
+export const GAME_HEIGHT = 720;
 
 /** Locked decisions (see PLAN.md). */
 export const CONFIG = {

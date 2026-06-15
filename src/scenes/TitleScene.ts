@@ -17,7 +17,7 @@ export class TitleScene extends Phaser.Scene {
     const cx = GAME_WIDTH / 2;
 
     // Waving Burhan.
-    const burhan = this.add.image(cx, GAME_HEIGHT * 0.4, "burhan");
+    const burhan = this.add.image(cx, GAME_HEIGHT * 0.33, "burhan");
     burhan.setOrigin(0.5, 0.5);
     this.tweens.add({
       targets: burhan,
@@ -29,8 +29,8 @@ export class TitleScene extends Phaser.Scene {
     });
 
     // Play button: green circle + white triangle.
-    const btnY = GAME_HEIGHT * 0.74;
-    const radius = 110;
+    const btnY = GAME_HEIGHT * 0.76;
+    const radius = 92;
     const button = this.add.container(cx, btnY);
     const circle = this.add.graphics();
     circle.fillStyle(COLORS.playDark, 1);
@@ -40,7 +40,7 @@ export class TitleScene extends Phaser.Scene {
     // Play triangle drawn on the same graphics; points chosen so the centroid
     // (and thus the optical centre) sits at 0,0 inside the circle.
     circle.fillStyle(COLORS.text, 1);
-    circle.fillTriangle(-32, -48, -32, 48, 64, 0);
+    circle.fillTriangle(-28, -42, -28, 42, 56, 0);
     button.add([circle]);
     button.setSize(radius * 2, radius * 2);
     button.setInteractive({ useHandCursor: true });
