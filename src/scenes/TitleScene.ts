@@ -37,9 +37,11 @@ export class TitleScene extends Phaser.Scene {
     circle.fillCircle(0, 8, radius);
     circle.fillStyle(COLORS.play, 1);
     circle.fillCircle(0, 0, radius);
-    // Play triangle, geometry centered within the circle.
-    const triangle = this.add.triangle(0, 0, -28, -48, -28, 48, 54, 0, COLORS.text);
-    button.add([circle, triangle]);
+    // Play triangle drawn on the same graphics; points chosen so the centroid
+    // (and thus the optical centre) sits at 0,0 inside the circle.
+    circle.fillStyle(COLORS.text, 1);
+    circle.fillTriangle(-32, -48, -32, 48, 64, 0);
+    button.add([circle]);
     button.setSize(radius * 2, radius * 2);
     button.setInteractive({ useHandCursor: true });
 

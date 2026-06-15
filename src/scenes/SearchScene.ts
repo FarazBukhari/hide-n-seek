@@ -119,20 +119,16 @@ export class SearchScene extends Phaser.Scene {
     const y = GAME_HEIGHT * 0.42;
     const dir = side === "left" ? -1 : 1;
     const c = this.add.container(x, y);
-    const pad = this.add.circle(0, 0, 56, 0x000000, 0.28);
-    const arrow = this.add.triangle(
-      0,
-      0,
-      -22 * dir,
-      -40,
-      -22 * dir,
-      40,
-      30 * dir,
-      0,
-      0xffffff,
-    );
-    c.add([pad, arrow]);
-    c.setSize(120, 120);
+    const g = this.add.graphics();
+    g.fillStyle(0x000000, 0.28);
+    g.fillCircle(0, 0, 58);
+    // Arrow drawn with fillTriangle so it sits centred in the circle; centroid
+    // at 0,0 (tip = 2x the back offset on the opposite side).
+    g.fillStyle(0xffffff, 1);
+    if (side === "left") g.fillTriangle(-44, 0, 22, -36, 22, 36);
+    else g.fillTriangle(44, 0, -22, -36, -22, 36);
+    c.add([g]);
+    c.setSize(132, 132);
     c.setInteractive({ useHandCursor: true });
     this.tweens.add({
       targets: c,

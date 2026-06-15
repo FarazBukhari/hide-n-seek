@@ -97,9 +97,10 @@ export class ResultScene extends Phaser.Scene {
     circle.fillCircle(0, 8, radius);
     circle.fillStyle(COLORS.play, 1);
     circle.fillCircle(0, 0, radius);
-    // Centered play triangle.
-    const triangle = this.add.triangle(0, 0, -28, -44, -28, 44, 50, 0, COLORS.text);
-    button.add([circle, triangle]);
+    // Centroid-centered play triangle on the same graphics.
+    circle.fillStyle(COLORS.text, 1);
+    circle.fillTriangle(-30, -44, -30, 44, 60, 0);
+    button.add([circle]);
     button.setSize(radius * 2, radius * 2);
     button.setInteractive({ useHandCursor: true });
     this.tweens.add({
