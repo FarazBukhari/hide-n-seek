@@ -1,0 +1,19 @@
+{
+  "name": "wheres-burhan",
+  "version": "0.1.0",
+  "description": "Where's Burhan - a wordless hide-and-seek game for young children",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2",
+    "vite-plugin-pwa": "^0.20.5"
+  },
+  "dependencies": {
+    "phaser": "^3.80.1"
+  }
+}

@@ -112,13 +112,13 @@ keep it pure-web for now (see questions below).
 
 ---
 
-## A few choices I'd like your call on before I build
+## Locked decisions (2026-06-15)
 
-1. **Tries:** start at **5** wrong checks per round (tunable)?
-2. **Countdown length:** keep at **10s**, or shorter for a young child?
-3. **Android APK:** add the Capacitor/APK track (after M5), or stay web/PWA only
-   for now?
-4. **Difficulty:** gentle (obvious hiding spots, strong escalating hints) to
-   start?
-5. **Photos of Burhan:** how will you share them? We build with a placeholder
-   meanwhile, so this doesn't block anything.
+1. **Tries:** start at **5** wrong checks per round (config constant, tunable).
+2. **Countdown length:** **10 seconds**.
+3. **Android APK:** **yes** — add the Capacitor/APK track as a final step after
+   M5 (web/PWA remains the primary dev/test loop).
+4. **Difficulty:** **gentle** — obvious hiding spots, strong escalating hints so
+   it always ends happily.
+5. **Photos of Burhan:** TBD — building with a placeholder meanwhile, art swap is
+   a drop-in so this blocks nothing.

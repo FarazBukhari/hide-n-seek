@@ -1,0 +1,15 @@
+node_modules/
+dist/
+dev-dist/
+.DS_Store
+*.local
+.vite/
+
+# Capacitor / Android (added in M6)
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+*.apk
+*.aab
+*.keystore
