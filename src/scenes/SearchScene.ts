@@ -1,13 +1,9 @@
 import Phaser from "phaser";
 import { GAME_WIDTH, GAME_HEIGHT, CONFIG } from "../config";
-import {
-  type House,
-  type Room,
-  roomById,
-  roomDistance,
-} from "../house/types";
+import { type House, roomById } from "../house/types";
 import { HidingSpotView } from "../objects/HidingSpotView";
-import { playGiggle, playNope, playFound } from "../audio/sfx";
+import { HintSystem } from "../systems/hintSystem";
+import { playNope, playFound, playGiggle } from "../audio/sfx";
 
 interface SearchData {
   house: House;
@@ -33,7 +29,7 @@ export class SearchScene extends Phaser.Scene {
   private roomLayer!: Phaser.GameObjects.Container;
   private spotViews: HidingSpotView[] = [];
   private stars: Phaser.GameObjects.Star[] = [];
-  private hintTimer?: Phaser.Time.TimerEvent;
+  private hints!: HintSystem;
 
   constructor() {
     super("Search");
@@ -52,6 +48,15 @@ export class SearchScene extends Phaser.Scene {
 
     this.cameras.main.fadeIn(250, 0, 0, 0);
     this.roomLayer = this.add.container(0, 0);
+    this.hints = new HintSystem(this, {
+      house: this.house,
+      hideRoomId: this.hideRoomId,
+      hideSpotId: this.hideSpotId,
+      getCurrentRoomId: () => this.currentRoomId,
+      getTriesLeft: () => this.triesLeft,
+      getSpotViews: () => this.spotViews,
+    });
+    this.hints.create();
     this.drawTries();
     this.enterRoom(this.currentRoomId);
   }
@@ -64,6 +69,7 @@ export class SearchScene extends Phaser.Scene {
     for (let i = 0; i < CONFIG.maxTries; i++) {
       const star = this.add.star(startX + i * gap, y, 5, 18, 38, 0xffd24a);
       star.setStrokeStyle(4, 0xc99a1f);
+      star.setDepth(10); // above the warmth overlay (depth 5)
       this.stars.push(star);
     }
   }
@@ -113,7 +119,7 @@ export class SearchScene extends Phaser.Scene {
       this.roomLayer.add(this.makeDoorArrow(door.side, door.toRoomId));
     }
 
-    this.scheduleHints();
+    this.hints.enterRoom();
   }
 
   private makeDoorArrow(side: "left" | "right", toRoomId: string) {
@@ -121,6 +127,22 @@ export class SearchScene extends Phaser.Scene {
     const y = GAME_HEIGHT * 0.45;
     const dir = side === "left" ? -1 : 1;
     const c = this.add.container(x, y);
+
+    // Warm glow on the door that leads closer to Burhan (wordless direction).
+    if (this.hints.leadsCloser(toRoomId)) {
+      const glow = this.add.circle(0, 0, 78, 0xffd24a, 0.0);
+      c.add(glow);
+      this.tweens.add({
+        targets: glow,
+        alpha: { from: 0.0, to: 0.55 },
+        scale: { from: 0.9, to: 1.15 },
+        duration: 650,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.inOut",
+      });
+    }
+
     const g = this.add.graphics();
     g.fillStyle(0x000000, 0.28);
     g.fillCircle(0, 0, 58);
@@ -183,11 +205,10 @@ export class SearchScene extends Phaser.Scene {
 
   private win(view: HidingSpotView) {
     this.roundOver = true;
-    this.hintTimer?.remove();
+    this.hints.stop();
     playFound();
     const p = view.popOutPoint();
-    const burhan = this.add.image(p.x, p.y, "burhan").setScale(0);
-    this.roomLayer.add(burhan);
+    const burhan = this.add.image(p.x, p.y, "burhan").setScale(0).setDepth(20);
     this.tweens.add({
       targets: burhan,
       scale: 0.62,
@@ -209,15 +230,15 @@ export class SearchScene extends Phaser.Scene {
 
   private lose() {
     this.roundOver = true;
-    this.hintTimer?.remove();
+    this.hints.stop();
     // Reveal where Burhan actually was: go to his room and open the spot.
     const showReveal = () => {
       this.enterRoom(this.hideRoomId);
+      this.hints.stop();
       const view = this.spotViews.find((v) => v.spot.id === this.hideSpotId)!;
       void view.open(this).then(() => {
         const p = view.popOutPoint();
-        const burhan = this.add.image(p.x, p.y, "burhan").setScale(0);
-        this.roomLayer.add(burhan);
+        const burhan = this.add.image(p.x, p.y, "burhan").setScale(0).setDepth(20);
         this.tweens.add({
           targets: burhan,
           scale: 0.62,
@@ -241,55 +262,4 @@ export class SearchScene extends Phaser.Scene {
     }
   }
 
-  // ---- hints (subtle; M4 expands) -------------------------------------------
-  private scheduleHints() {
-    this.hintTimer?.remove();
-    // Don't re-arm once the round is over (e.g. the lose() reveal re-enters a
-    // room).
-    if (this.roundOver) return;
-    this.hintTimer = this.time.addEvent({
-      delay: CONFIG.hints.intervalMs,
-      loop: true,
-      callback: () => this.emitHint(),
-    });
-  }
-
-  private emitHint() {
-    if (this.roundOver) return;
-    const h = CONFIG.hints;
-    const room = roomById(this.house, this.currentRoomId);
-    const dist = roomDistance(this.house, this.currentRoomId, this.hideRoomId);
-
-    // Gentle escalation as tries run low so a young child still closes in.
-    const escalation = 1 + (CONFIG.maxTries - this.triesLeft) * h.escalationPerTry;
-
-    if (dist === 0) {
-      playGiggle(Math.min(0.8, h.inRoomGiggleIntensity * escalation), 0);
-      // Only sometimes show the peek, so it's a treat rather than a giveaway.
-      if (Math.random() < h.inRoomPeekChance * escalation) {
-        const correct = this.spotViews.find((v) => v.spot.id === this.hideSpotId);
-        correct?.startPeek(this);
-      }
-    } else if (Number.isFinite(dist)) {
-      // Farther rooms giggle less often and more softly.
-      if (Math.random() < Math.min(0.7, 0.7 / dist)) {
-        const intensity = Math.min(0.6, (h.nearGiggleIntensity / dist) * escalation);
-        playGiggle(intensity, this.panTowardBurhan(room));
-      }
-    }
-  }
-
-  /** Stereo pan toward the door that leads closer to Burhan. */
-  private panTowardBurhan(room: Room): number {
-    let best = -1;
-    let bestSide: "left" | "right" = "left";
-    for (const door of room.doors) {
-      const d = roomDistance(this.house, door.toRoomId, this.hideRoomId);
-      if (best < 0 || d < best) {
-        best = d;
-        bestSide = door.side;
-      }
-    }
-    return bestSide === "left" ? -0.8 : 0.8;
-  }
 }

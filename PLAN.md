@@ -98,6 +98,8 @@ Layering several non-text hints so a 4–5 yr old always has a clue:
   lanes per room, so each room holds more furniture. Vitest unit tests cover
   the generator + room-distance logic; CI runs them before deploy.
 - **M4 – Hint system:** laughter proximity, micro-peeks, escalating help.
+  Extracted into `systems/hintSystem.ts`; adds a warmer/cooler screen tint and a
+  glowing door arrow pointing toward Burhan.
 - **M5 – Polish:** Burhan likeness, sound design, celebration effects, difficulty
   tuning.
 
