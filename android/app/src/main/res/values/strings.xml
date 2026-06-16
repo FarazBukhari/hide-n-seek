@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Where\'s Burhan</string>
+    <string name="title_activity_main">Where\'s Burhan</string>
+    <string name="package_name">com.bukhari.wheresburhan</string>
+    <string name="custom_url_scheme">com.bukhari.wheresburhan</string>
+</resources>

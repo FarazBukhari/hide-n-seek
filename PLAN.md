@@ -102,6 +102,10 @@ Layering several non-text hints so a 4–5 yr old always has a clue:
   glowing door arrow pointing toward Burhan.
 - **M5 – Polish:** Burhan likeness, sound design, celebration effects, difficulty
   tuning.
+- **M6 – Android APK:** Capacitor wraps the web build; locked to landscape. A
+  GitHub Actions job (`build-apk.yml`) builds a sideloadable debug APK and
+  uploads it as a downloadable artifact. Run via Actions → "Build Android APK" →
+  Run workflow, or by pushing a `v*` tag.
 
 ---
 

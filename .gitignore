@@ -5,11 +5,8 @@ dev-dist/
 *.local
 .vite/
 
-# Capacitor / Android (added in M6)
-android/app/build/
-android/build/
-android/.gradle/
-android/local.properties
+# Capacitor / Android: build artifacts are handled by android/.gitignore.
+# Keep these as a safety net for files generated outside that folder.
 *.apk
 *.aab
 *.keystore
