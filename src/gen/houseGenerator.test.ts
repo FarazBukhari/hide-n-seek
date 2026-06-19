@@ -22,12 +22,12 @@ describe("generateHouse", () => {
     }
   });
 
-  it("gives each room 3-4 hiding spots that never share a lane (x)", () => {
+  it("gives each room 4-5 hiding spots that never share a lane (x)", () => {
     for (const seed of SEEDS) {
       const h = generateHouse(seed);
       for (const room of h.rooms) {
-        expect(room.spots.length).toBeGreaterThanOrEqual(3);
-        expect(room.spots.length).toBeLessThanOrEqual(4);
+        expect(room.spots.length).toBeGreaterThanOrEqual(4);
+        expect(room.spots.length).toBeLessThanOrEqual(5);
         const xs = room.spots.map((s) => s.x);
         expect(new Set(xs).size).toBe(xs.length); // no overlap
       }

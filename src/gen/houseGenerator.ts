@@ -16,8 +16,8 @@ import { Rng, nextSeed } from "./rng";
 
 const MIN_ROOMS = 4;
 const MAX_ROOMS = 6;
-const MIN_SPOTS = 3;
-const MAX_SPOTS = 4;
+const MIN_SPOTS = 4;
+const MAX_SPOTS = 5;
 
 /** Pick room types, avoiding the same type twice in a row so neighbours differ. */
 function pickTypes(rng: Rng, count: number): RoomTemplate[] {
@@ -34,7 +34,7 @@ function pickTypes(rng: Rng, count: number): RoomTemplate[] {
   return result;
 }
 
-/** Choose 2–3 hiding spots for a room, one per lane so they never overlap. */
+/** Choose several hiding spots for a room, one per lane so they never overlap. */
 function genSpots(rng: Rng, roomId: string, template: RoomTemplate): HidingSpot[] {
   // Group candidate slots by lane.
   const byLane = new Map<Lane, SlotTemplate[]>();

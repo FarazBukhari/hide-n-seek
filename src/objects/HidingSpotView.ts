@@ -24,14 +24,14 @@ export class HidingSpotView {
 
   /** Per-kind bounding box the furniture is scaled to fit (aspect preserved). */
   private static readonly BOX: Record<SpotKind, { w: number; h: number }> = {
-    wardrobe: { w: 220, h: 330 },
-    bed: { w: 310, h: 215 },
-    curtain: { w: 240, h: 350 },
-    toybox: { w: 240, h: 205 },
-    plant: { w: 210, h: 285 },
-    door: { w: 220, h: 350 },
-    sofa: { w: 330, h: 205 },
-    bookshelf: { w: 230, h: 345 },
+    wardrobe: { w: 210, h: 330 },
+    bed: { w: 255, h: 215 },
+    curtain: { w: 220, h: 350 },
+    toybox: { w: 220, h: 205 },
+    plant: { w: 200, h: 285 },
+    door: { w: 210, h: 350 },
+    sofa: { w: 265, h: 205 },
+    bookshelf: { w: 220, h: 345 },
   };
 
   constructor(scene: Phaser.Scene, spot: HidingSpot) {
