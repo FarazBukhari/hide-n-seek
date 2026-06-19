@@ -41,7 +41,9 @@ def run() -> list[str]:
     base = (
         "Create a single full-body pixel-art game character of THIS specific young "
         "boy (4-5 years old) shown in the reference photos — keep his real face, "
-        "hair, and skin tone recognizable. Pose: {pose}. "
+        "hair, and skin tone recognizable. Dress him in a plain solid-color "
+        "t-shirt and shorts with NO text, letters, logos or brand names anywhere. "
+        "Pose: {pose}. "
     )
     frames = {}
     for name, pose in POSES.items():
