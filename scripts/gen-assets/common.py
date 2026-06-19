@@ -37,7 +37,9 @@ STYLE = (
     "supplied reference sprite sheet. Subject centered and fully in frame."
 )
 TRANSPARENT = (
-    " Transparent background (PNG alpha), no ground, no shadow, no border, no text, "
+    " IMPORTANT: place the subject on a SOLID FLAT pure-magenta (#FF00FF) background "
+    "that completely fills the frame. Do NOT draw a checkerboard, grid, dots, or any "
+    "transparency pattern. No ground, no floor line, no shadow, no border, no text, "
     "no watermark."
 )
 
@@ -117,6 +119,31 @@ def generate(prompt: str, refs: Iterable[Image.Image] = ()) -> Image.Image:
 # Pillow post-processing
 # ---------------------------------------------------------------------------
 
+def chroma_key(img: Image.Image) -> Image.Image:
+    """Knock out a magenta chroma-key background (#FF00FF) to transparent.
+
+    Magenta is high-red, high-blue, low-green — a hue nothing in our friendly
+    palette (skin, red/blue clothes, wood, greenery) collides with, so we can key
+    it generously without eroding the subject. Also softens the semi-magenta
+    anti-aliased fringe at the subject's edge.
+    """
+    img = img.convert("RGBA")
+    px = img.load()
+    w, h = img.size
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                continue
+            # Strong magenta field → fully transparent.
+            if r > 120 and b > 90 and g < min(r, b) - 35:
+                px[x, y] = (r, g, b, 0)
+            # Milder magenta fringe → partial knock-down so edges aren't pink.
+            elif r > 110 and b > 80 and g < min(r, b) - 18:
+                px[x, y] = (r, g, b, a // 3)
+    return img
+
+
 def key_out_background(img: Image.Image, tol: int = 28) -> Image.Image:
     """Make a near-uniform background transparent by sampling the four corners."""
     img = img.convert("RGBA")
@@ -160,7 +187,7 @@ def make_sprite(prompt: str, w: int, h: int, refs=(), transparent=True) -> Image
     full = prompt + STYLE + (TRANSPARENT if transparent else "")
     img = generate(full, refs)
     if transparent:
-        img = key_out_background(img)
+        img = chroma_key(img)
     return fit_canvas(img, w, h)
 
 
