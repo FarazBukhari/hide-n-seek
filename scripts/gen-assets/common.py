@@ -17,6 +17,7 @@ import io
 import json
 import os
 import pathlib
+import time
 from typing import Iterable
 
 from PIL import Image
@@ -81,9 +82,20 @@ def burhan_photos(limit: int = 4) -> list[Image.Image]:
     return _load_images(PHOTOS_DIR, limit=limit)
 
 
+# Gentle throttle: at most one image request per GEN_DELAY_SEC, so we never
+# hammer the API (and stay friendly to rate limits / spend). One at a time.
+GEN_DELAY_SEC = float(os.environ.get("GEN_DELAY_SEC", "8"))
+_last_call = 0.0
+
+
 def generate(prompt: str, refs: Iterable[Image.Image] = ()) -> Image.Image:
     """Generate one image. `refs` are sent alongside the prompt for style/likeness."""
     from google.genai import types
+
+    global _last_call
+    wait = GEN_DELAY_SEC - (time.time() - _last_call)
+    if wait > 0:
+        time.sleep(wait)
 
     contents: list = [prompt, *refs]
     resp = client().models.generate_content(
@@ -95,7 +107,9 @@ def generate(prompt: str, refs: Iterable[Image.Image] = ()) -> Image.Image:
         for part in (cand.content.parts if cand.content else []) or []:
             data = getattr(part, "inline_data", None)
             if data and data.data:
+                _last_call = time.time()
                 return Image.open(io.BytesIO(data.data)).convert("RGBA")
+    _last_call = time.time()
     raise RuntimeError("Gemini returned no image. Prompt:\n" + prompt[:200])
 
 
