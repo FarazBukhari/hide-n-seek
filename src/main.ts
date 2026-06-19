@@ -20,7 +20,8 @@ new Phaser.Game({
   },
   // Touch + mouse; multi-touch not needed for tap-only gameplay.
   input: { activePointers: 1 },
-  render: { pixelArt: false, antialias: true },
+  // Crisp 8-bit pixel-art scaling (no blurring of sprites at integer scales).
+  render: { pixelArt: true, antialias: false, roundPixels: true },
   scene: [
     BootScene,
     PreloadScene,

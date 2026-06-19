@@ -4,8 +4,20 @@
 // no changes.
 // ---------------------------------------------------------------------------
 
-/** Kinds of furniture that can conceal Burhan. Each renders differently. */
-export type SpotKind = "wardrobe" | "bed" | "curtain" | "toybox" | "plant";
+/**
+ * Kinds of furniture that can conceal Burhan. Each renders differently.
+ * The first five are the original spots; `door` / `sofa` / `bookshelf` are the
+ * new indoor spots added in the pixel-art reskin (no outdoor spots).
+ */
+export type SpotKind =
+  | "wardrobe"
+  | "bed"
+  | "curtain"
+  | "toybox"
+  | "plant"
+  | "door"
+  | "sofa"
+  | "bookshelf";
 
 export interface HidingSpot {
   id: string;

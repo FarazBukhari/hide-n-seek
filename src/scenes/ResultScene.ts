@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { GAME_WIDTH, GAME_HEIGHT, COLORS } from "../config";
+import { GAME_WIDTH, GAME_HEIGHT, COLORS, TEXT } from "../config";
 import { playFound, playGiggle } from "../audio/sfx";
 
 interface ResultData {
@@ -20,8 +20,19 @@ export class ResultScene extends Phaser.Scene {
     this.cameras.main.fadeIn(250, 0, 0, 0);
 
     const burhan = this.add
-      .image(cx, GAME_HEIGHT * 0.36, "burhan")
+      .image(cx, GAME_HEIGHT * 0.4, "burhan")
       .setScale(0.62);
+
+    this.add
+      .text(cx, GAME_HEIGHT * 0.12, data.found ? TEXT.found : TEXT.away, {
+        fontFamily: "Arial, sans-serif",
+        fontSize: "64px",
+        color: "#ffffff",
+        fontStyle: "bold",
+        stroke: "#2a1c10",
+        strokeThickness: 9,
+      })
+      .setOrigin(0.5);
 
     if (data.found) {
       playFound();
