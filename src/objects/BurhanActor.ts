@@ -60,11 +60,12 @@ export class BurhanActor {
   hideAt(view: HidingSpotView, kind: SpotKind) {
     this.kind = kind;
     const v = SPOT_VISUAL[kind];
-    // Stand on the furniture's floor line, nudged by the per-kind hide offset.
-    const footY = view.spot.y + 110;
-    this.home = { x: view.spot.x + v.hide.dx, y: footY + v.hide.dy };
+    // Feet on the furniture's floor line (spot.y), nudged by the hide offset.
+    this.home = { x: view.spot.x + v.hide.dx, y: view.spot.y + v.hide.dy };
     this.sprite.setPosition(this.home.x, this.home.y);
-    this.sprite.setScale(v.scale);
+    // Scale so he tucks fully within the furniture's height (stays occluded).
+    const targetH = view.displayH * v.scale;
+    this.sprite.setScale(targetH / this.sprite.height);
     this.sprite.setAlpha(1);
     this.sprite.setFlipX(v.peek.dx > 0);
     this.play("crouch");

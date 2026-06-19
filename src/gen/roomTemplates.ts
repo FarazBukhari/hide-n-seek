@@ -21,16 +21,21 @@ export const LANE_X: Record<Lane, number> = {
   R: GAME_WIDTH * 0.88,
 };
 
-/** Per-kind vertical placement so furniture sits grounded on the floor line. */
+/**
+ * Floor line (scene Y) where each furniture kind's base rests. Furniture is now
+ * bottom-anchored at this Y and grows upward, so a single shared floor line keeps
+ * everything standing on the same ground.
+ */
+const FLOOR = 636;
 const Y: Record<SpotKind, number> = {
-  wardrobe: 458,
-  curtain: 430,
-  bed: 498,
-  toybox: 508,
-  plant: 480,
-  door: 452,
-  sofa: 500,
-  bookshelf: 456,
+  wardrobe: FLOOR,
+  curtain: FLOOR,
+  bed: FLOOR,
+  toybox: FLOOR,
+  plant: FLOOR,
+  door: FLOOR,
+  sofa: FLOOR,
+  bookshelf: FLOOR,
 };
 
 export interface SlotTemplate {

@@ -8,11 +8,11 @@ import common
 GAME_WIDTH, GAME_HEIGHT = 1280, 720
 
 ROOMS = {
-    "living": "a cozy cartoon living room interior, warm tones, a rug and a window, empty floor in the middle",
-    "bedroom": "a child's cartoon bedroom interior, soft blue tones, a window, empty floor in the middle",
-    "kitchen": "a bright cartoon kitchen interior, green/yellow tones, counters along the back, empty floor",
-    "bathroom": "a clean cartoon bathroom interior, light teal tones, tiles, empty floor in the middle",
-    "hallway": "a warm cartoon hallway interior, several doors along the back, empty floor in the middle",
+    "living": "an empty living room, warm beige walls, a wooden floor",
+    "bedroom": "an empty child's bedroom, soft blue walls, a wooden floor",
+    "kitchen": "an empty kitchen, pale green walls, a tiled floor",
+    "bathroom": "an empty bathroom, light teal tiled walls, a tiled floor",
+    "hallway": "an empty hallway, warm cream walls, a wooden floor",
 }
 
 
@@ -22,9 +22,12 @@ def run() -> list[str]:
     for room, prompt in ROOMS.items():
         print(f"  room/{room} ...")
         full = (
-            prompt
-            + ". Side-on flat view suitable as a game background, leave the lower-"
-            "center floor area clear so furniture can be placed on top."
+            "A COMPLETELY EMPTY room background for a 2D game: " + prompt + ". "
+            "Flat side-on view, simple flat-color pixel-art walls and floor with a "
+            "clear horizontal line where the wall meets the floor about two-thirds "
+            "down. ABSOLUTELY NO furniture, no objects, no rugs, no pictures, no "
+            "plants, no shelves, no appliances, no decorations of any kind — just "
+            "bare empty walls and an empty floor. Nothing in the room."
         )
         img = common.make_background(full, GAME_WIDTH, GAME_HEIGHT, refs=style)
         common.save(img, f"bg-{room}")

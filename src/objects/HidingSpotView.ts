@@ -1,13 +1,15 @@
 import Phaser from "phaser";
-import type { HidingSpot } from "../house/types";
+import type { HidingSpot, SpotKind } from "../house/types";
 import { SPOT_VISUAL } from "../config";
 import { furnBaseKey, furnCoverKey } from "../assets/manifest";
 
 /**
- * Visual + interactive representation of one hiding spot. When illustrated art
- * exists (`furn-<kind>-base` / `-cover`) it draws sprites; otherwise it falls
- * back to the original vector furniture. Either way it exposes a `cover` layer
- * that animates open when checked, behind which the live BurhanActor hides.
+ * Visual + interactive representation of one hiding spot. Furniture is drawn
+ * **grounded** — its base sits on the room's floor line (`spot.y`) and it grows
+ * upward, at its natural aspect ratio. When illustrated art exists
+ * (`furn-<kind>-base` / `-cover`) it draws sprites; otherwise it falls back to
+ * vector furniture. Either way it exposes a `cover` layer that animates open when
+ * checked, behind which the live BurhanActor hides.
  */
 export class HidingSpotView {
   readonly spot: HidingSpot;
@@ -16,15 +18,32 @@ export class HidingSpotView {
 
   private cover: Phaser.GameObjects.GameObject[] = [];
 
-  private static readonly W = 180;
-  private static readonly H = 220;
+  /** Computed display footprint (set during draw), used by actors + pop-out. */
+  displayW = 180;
+  displayH = 220;
+
+  /** Per-kind bounding box the furniture is scaled to fit (aspect preserved). */
+  private static readonly BOX: Record<SpotKind, { w: number; h: number }> = {
+    wardrobe: { w: 220, h: 330 },
+    bed: { w: 310, h: 215 },
+    curtain: { w: 240, h: 350 },
+    toybox: { w: 240, h: 205 },
+    plant: { w: 210, h: 285 },
+    door: { w: 220, h: 350 },
+    sofa: { w: 330, h: 205 },
+    bookshelf: { w: 230, h: 345 },
+  };
 
   constructor(scene: Phaser.Scene, spot: HidingSpot) {
     this.spot = spot;
     this.container = scene.add.container(spot.x, spot.y);
     this.draw(scene);
-    this.container.setSize(HidingSpotView.W, HidingSpotView.H);
-    this.container.setInteractive({ useHandCursor: true });
+    // Hit area spans the furniture (which sits above the floor-line origin).
+    this.container.setInteractive(
+      new Phaser.Geom.Rectangle(-this.displayW / 2, -this.displayH, this.displayW, this.displayH),
+      Phaser.Geom.Rectangle.Contains,
+    );
+    this.container.input!.cursor = "pointer";
   }
 
   private add(obj: Phaser.GameObjects.GameObject, isCover = false) {
@@ -33,11 +52,6 @@ export class HidingSpotView {
   }
 
   private draw(scene: Phaser.Scene) {
-    const { W, H } = HidingSpotView;
-    // Dark "inside" revealed when opened — sits behind the cover.
-    const inside = scene.add.rectangle(0, 6, W * 0.82, H * 0.82, 0x241a14);
-    this.add(inside);
-
     if (scene.textures.exists(furnBaseKey(this.spot.kind))) {
       this.drawImages(scene);
     } else {
@@ -45,103 +59,113 @@ export class HidingSpotView {
     }
   }
 
-  /** Illustrated path: closed body image + an openable cover image. */
+  /**
+   * Illustrated path: an open/empty `base` body + an openable `cover`, both
+   * scaled to fit the kind's box at their true aspect and bottom-anchored on the
+   * floor line so they stand on the floor. A dark interior sits between them so
+   * whatever is behind the cover (Burhan) reads as "inside".
+   */
   private drawImages(scene: Phaser.Scene) {
-    const { W, H } = HidingSpotView;
-    const base = scene.add.image(0, 0, furnBaseKey(this.spot.kind));
-    base.setDisplaySize(W, H);
+    const box = HidingSpotView.BOX[this.spot.kind];
+    const baseSrc = scene.textures.get(furnBaseKey(this.spot.kind)).getSourceImage();
+    const s = Math.min(box.w / baseSrc.width, box.h / baseSrc.height);
+    this.displayW = baseSrc.width * s;
+    this.displayH = baseSrc.height * s;
+
+    // Soft contact shadow so the piece reads as grounded on any background.
+    this.add(scene.add.ellipse(0, 4, this.displayW * 0.78, 28, 0x000000, 0.18));
+
+    // Dark "inside" revealed when the cover opens — bottom-anchored behind it.
+    const inside = scene.add
+      .rectangle(0, -2, this.displayW * 0.78, this.displayH * 0.86, 0x241a14)
+      .setOrigin(0.5, 1);
+    this.add(inside);
+
+    const base = scene.add
+      .image(0, 0, furnBaseKey(this.spot.kind))
+      .setOrigin(0.5, 1)
+      .setDisplaySize(this.displayW, this.displayH);
     this.add(base);
+
     const coverKey = furnCoverKey(this.spot.kind);
     if (scene.textures.exists(coverKey)) {
-      const cover = scene.add.image(0, 0, coverKey);
-      cover.setDisplaySize(W, H);
+      const cSrc = scene.textures.get(coverKey).getSourceImage();
+      // Scale the cover by the same factor so it matches the base's footprint.
+      const cover = scene.add
+        .image(0, 0, coverKey)
+        .setOrigin(0.5, 1)
+        .setDisplaySize(cSrc.width * s, cSrc.height * s);
       this.add(cover, true);
     }
   }
 
   /** Original procedural furniture (fallback while art is generated). */
   private drawVector(scene: Phaser.Scene) {
-    const { W, H } = HidingSpotView;
+    const W = 180;
+    const H = 220;
+    this.displayW = W;
+    this.displayH = H;
     const hw = W / 2;
     const hh = H / 2;
+    // Bottom-anchor the vector drawing (authored around 0,0) onto the floor line.
+    const oy = -hh;
+    const r = (x: number, y: number, w: number, h: number, c: number) =>
+      scene.add.rectangle(x, y + oy, w, h, c);
+
+    this.add(scene.add.ellipse(0, 4, W * 0.78, 26, 0x000000, 0.18));
+    const inside = scene.add.rectangle(0, 6 + oy, W * 0.82, H * 0.82, 0x241a14);
+    this.add(inside);
 
     switch (this.spot.kind) {
       case "wardrobe": {
-        const body = scene.add.rectangle(0, 0, W, H, 0x8a5a32).setStrokeStyle(6, 0x5e3c20);
-        this.add(body);
-        const ld = scene.add.rectangle(-hw / 2, 0, hw - 8, H - 16, 0xa6703f);
-        const rd = scene.add.rectangle(hw / 2, 0, hw - 8, H - 16, 0xa6703f);
-        ld.setStrokeStyle(4, 0x5e3c20);
-        rd.setStrokeStyle(4, 0x5e3c20);
+        this.add(r(0, 0, W, H, 0x8a5a32).setStrokeStyle(6, 0x5e3c20));
+        const ld = r(-hw / 2, 0, hw - 8, H - 16, 0xa6703f).setStrokeStyle(4, 0x5e3c20);
+        const rd = r(hw / 2, 0, hw - 8, H - 16, 0xa6703f).setStrokeStyle(4, 0x5e3c20);
         this.add(ld, true);
         this.add(rd, true);
         break;
       }
       case "bed": {
-        const frame = scene.add.rectangle(0, hh * 0.5, W, H * 0.55, 0x9c5a3c);
-        this.add(frame);
-        const mattress = scene.add.rectangle(0, hh * 0.1, W * 0.95, H * 0.32, 0xfdf3e3);
-        this.add(mattress);
-        const blanket = scene.add.rectangle(0, hh * 0.18, W * 0.95, H * 0.22, 0xff8fa3);
-        this.add(blanket);
-        const skirt = scene.add.rectangle(0, hh * 0.78, W * 0.95, H * 0.4, 0xc77a55);
-        this.add(skirt, true);
+        this.add(r(0, hh * 0.5, W, H * 0.55, 0x9c5a3c));
+        this.add(r(0, hh * 0.1, W * 0.95, H * 0.32, 0xfdf3e3));
+        this.add(r(0, hh * 0.18, W * 0.95, H * 0.22, 0xff8fa3));
+        this.add(r(0, hh * 0.78, W * 0.95, H * 0.4, 0xc77a55), true);
         break;
       }
       case "curtain": {
-        const rod = scene.add.rectangle(0, -hh, W * 1.05, 12, 0x6b4a2a);
-        this.add(rod);
-        const window = scene.add.rectangle(0, 0, W * 0.8, H * 0.8, 0x8fd0ff);
-        this.add(window);
-        const lc = scene.add.rectangle(-hw * 0.55, 0, W * 0.45, H, 0x7a3b6b);
-        const rc = scene.add.rectangle(hw * 0.55, 0, W * 0.45, H, 0x7a3b6b);
-        this.add(lc, true);
-        this.add(rc, true);
+        this.add(r(0, -hh, W * 1.05, 12, 0x6b4a2a));
+        this.add(r(0, 0, W * 0.8, H * 0.8, 0x8fd0ff));
+        this.add(r(-hw * 0.55, 0, W * 0.45, H, 0x7a3b6b), true);
+        this.add(r(hw * 0.55, 0, W * 0.45, H, 0x7a3b6b), true);
         break;
       }
       case "toybox": {
-        const box = scene.add.rectangle(0, hh * 0.3, W, H * 0.7, 0xf2b134).setStrokeStyle(6, 0xc4881f);
-        this.add(box);
-        const lid = scene.add.rectangle(0, -hh * 0.35, W * 1.04, H * 0.22, 0xffd36b).setStrokeStyle(6, 0xc4881f);
-        this.add(lid, true);
+        this.add(r(0, hh * 0.3, W, H * 0.7, 0xf2b134).setStrokeStyle(6, 0xc4881f));
+        this.add(r(0, -hh * 0.35, W * 1.04, H * 0.22, 0xffd36b).setStrokeStyle(6, 0xc4881f), true);
         break;
       }
       case "plant": {
-        const pot = scene.add.rectangle(0, hh * 0.6, W * 0.6, H * 0.4, 0xcf6a3a);
-        this.add(pot);
-        const lleaf = scene.add.ellipse(-hw * 0.3, -hh * 0.1, W * 0.7, H * 0.8, 0x3fa05a);
-        const rleaf = scene.add.ellipse(hw * 0.3, -hh * 0.1, W * 0.7, H * 0.8, 0x4fb96a);
-        this.add(lleaf, true);
-        this.add(rleaf, true);
+        this.add(r(0, hh * 0.6, W * 0.6, H * 0.4, 0xcf6a3a));
+        this.add(scene.add.ellipse(-hw * 0.3, -hh * 0.1 + oy, W * 0.7, H * 0.8, 0x3fa05a), true);
+        this.add(scene.add.ellipse(hw * 0.3, -hh * 0.1 + oy, W * 0.7, H * 0.8, 0x4fb96a), true);
         break;
       }
       case "door": {
-        const frame = scene.add.rectangle(0, 0, W * 0.92, H, 0x6b4a2a).setStrokeStyle(8, 0x4a3018);
-        this.add(frame);
-        const panel = scene.add.rectangle(0, 0, W * 0.7, H * 0.9, 0xb07b46).setStrokeStyle(4, 0x6b4a2a);
-        const knob = scene.add.circle(W * 0.24, 0, 8, 0xffd24a);
-        this.add(panel, true);
-        this.add(knob, true);
+        this.add(r(0, 0, W * 0.92, H, 0x6b4a2a).setStrokeStyle(8, 0x4a3018));
+        this.add(r(0, 0, W * 0.7, H * 0.9, 0xb07b46).setStrokeStyle(4, 0x6b4a2a), true);
+        this.add(scene.add.circle(W * 0.24, 0 + oy, 8, 0xffd24a), true);
         break;
       }
       case "sofa": {
-        const back = scene.add.rectangle(0, -hh * 0.18, W, H * 0.5, 0x4a78c0);
-        this.add(back);
-        const seat = scene.add.rectangle(0, hh * 0.2, W, H * 0.5, 0x5a8bd6).setStrokeStyle(5, 0x3a5f9e);
-        this.add(seat);
-        const cushion = scene.add.rectangle(0, hh * 0.55, W * 0.98, H * 0.4, 0x6f9ce0);
-        this.add(cushion, true);
+        this.add(r(0, -hh * 0.18, W, H * 0.5, 0x4a78c0));
+        this.add(r(0, hh * 0.2, W, H * 0.5, 0x5a8bd6).setStrokeStyle(5, 0x3a5f9e));
+        this.add(r(0, hh * 0.55, W * 0.98, H * 0.4, 0x6f9ce0), true);
         break;
       }
       case "bookshelf": {
-        const body = scene.add.rectangle(0, 0, W, H, 0x7a4f2a).setStrokeStyle(6, 0x533418);
-        this.add(body);
-        for (let i = -1; i <= 1; i++) {
-          const shelf = scene.add.rectangle(0, i * (H * 0.3), W * 0.9, 8, 0x533418);
-          this.add(shelf);
-        }
-        const books = scene.add.rectangle(0, 0, W * 0.84, H * 0.92, 0xcf6a3a).setStrokeStyle(4, 0x9c4a22);
-        this.add(books, true);
+        this.add(r(0, 0, W, H, 0x7a4f2a).setStrokeStyle(6, 0x533418));
+        for (let i = -1; i <= 1; i++) this.add(r(0, i * (H * 0.3), W * 0.9, 8, 0x533418));
+        this.add(r(0, 0, W * 0.84, H * 0.92, 0xcf6a3a).setStrokeStyle(4, 0x9c4a22), true);
         break;
       }
     }
@@ -172,13 +196,12 @@ export class HidingSpotView {
           Phaser.GameObjects.GameObject;
         const goLeft = i === 0 && twoCover;
         const slideX = twoCover ? (goLeft ? -v.openSlide.x : v.openSlide.x) : v.openSlide.x;
-        const slideY = v.openSlide.y;
         scene.tweens.add({
           targets: obj,
           x: (obj as any).x + slideX,
-          y: (obj as any).y + slideY,
-          alpha: this.spot.kind === "bed" ? 0.2 : 1,
-          duration: 280,
+          y: (obj as any).y + v.openSlide.y,
+          alpha: 0,
+          duration: 300,
           ease: "Quad.out",
           onComplete: done,
         });
@@ -186,8 +209,8 @@ export class HidingSpotView {
     });
   }
 
-  /** Top-center point of the furniture in scene coordinates — where Burhan pops out. */
+  /** Upper-middle point of the furniture in scene coords — where Burhan pops out. */
   popOutPoint() {
-    return { x: this.container.x, y: this.container.y - HidingSpotView.H * 0.45 };
+    return { x: this.container.x, y: this.container.y - this.displayH * 0.6 };
   }
 }
