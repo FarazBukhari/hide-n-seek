@@ -1,0 +1,72 @@
+{
+  "frames": {
+    "hide": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 300,
+        "h": 280
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 300,
+        "h": 280
+      },
+      "sourceSize": {
+        "w": 300,
+        "h": 280
+      }
+    },
+    "peek": {
+      "frame": {
+        "x": 300,
+        "y": 0,
+        "w": 300,
+        "h": 280
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 300,
+        "h": 280
+      },
+      "sourceSize": {
+        "w": 300,
+        "h": 280
+      }
+    },
+    "found": {
+      "frame": {
+        "x": 600,
+        "y": 0,
+        "w": 300,
+        "h": 280
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 300,
+        "h": 280
+      },
+      "sourceSize": {
+        "w": 300,
+        "h": 280
+      }
+    }
+  },
+  "meta": {
+    "image": "decoy-pet.png",
+    "size": {
+      "w": 900,
+      "h": 280
+    },
+    "scale": "1"
+  }
+}
