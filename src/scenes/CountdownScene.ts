@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { GAME_WIDTH, GAME_HEIGHT, COLORS, CONFIG } from "../config";
+import { GAME_WIDTH, GAME_HEIGHT, COLORS, CONFIG, TEXT } from "../config";
 import { generateHouse } from "../gen/houseGenerator";
 import { playTick, playShhh, playGiggle } from "../audio/sfx";
 
@@ -24,6 +24,18 @@ export class CountdownScene extends Phaser.Scene {
 
     const total = CONFIG.countdownSeconds;
     let remaining = total;
+
+    // Prompt.
+    this.add
+      .text(cx, GAME_HEIGHT * 0.08, TEXT.closeEyes, {
+        fontFamily: "Arial, sans-serif",
+        fontSize: "48px",
+        color: "#ffffff",
+        fontStyle: "bold",
+        stroke: "#000000",
+        strokeThickness: 6,
+      })
+      .setOrigin(0.5);
 
     // --- timer ring + numeral ---
     const ringRadius = 140;

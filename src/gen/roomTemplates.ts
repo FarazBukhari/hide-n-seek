@@ -28,6 +28,9 @@ const Y: Record<SpotKind, number> = {
   bed: 498,
   toybox: 508,
   plant: 480,
+  door: 452,
+  sofa: 500,
+  bookshelf: 456,
 };
 
 export interface SlotTemplate {
@@ -60,6 +63,10 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
       slot("toybox", "C"),
       slot("toybox", "MR"),
       slot("toybox", "R"),
+      slot("sofa", "C"),
+      slot("sofa", "ML"),
+      slot("bookshelf", "R"),
+      slot("bookshelf", "MR"),
     ],
   },
   {
@@ -73,6 +80,8 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
       slot("curtain", "ML"),
       slot("toybox", "R"),
       slot("plant", "L"),
+      slot("bookshelf", "L"),
+      slot("bookshelf", "ML"),
     ],
   },
   {
@@ -111,6 +120,9 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
       slot("curtain", "L"),
       slot("curtain", "ML"),
       slot("toybox", "R"),
+      slot("door", "C"),
+      slot("door", "ML"),
+      slot("door", "MR"),
     ],
   },
 ];

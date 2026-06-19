@@ -1,11 +1,13 @@
 import Phaser from "phaser";
 import type { HidingSpot } from "../house/types";
+import { SPOT_VISUAL } from "../config";
+import { furnBaseKey, furnCoverKey } from "../assets/manifest";
 
 /**
- * Visual + interactive representation of one hiding spot. Each furniture kind
- * draws differently and has a "cover" (doors / curtains / lid / skirt / leaves)
- * that animates open when checked. A `peek` wiggle is used for the wordless
- * "micro-tell" hint (light in M2, expanded in M4).
+ * Visual + interactive representation of one hiding spot. When illustrated art
+ * exists (`furn-<kind>-base` / `-cover`) it draws sprites; otherwise it falls
+ * back to the original vector furniture. Either way it exposes a `cover` layer
+ * that animates open when checked, behind which the live BurhanActor hides.
  */
 export class HidingSpotView {
   readonly spot: HidingSpot;
@@ -13,7 +15,6 @@ export class HidingSpotView {
   checked = false;
 
   private cover: Phaser.GameObjects.GameObject[] = [];
-  private peekTween?: Phaser.Tweens.Tween;
 
   private static readonly W = 180;
   private static readonly H = 220;
@@ -33,12 +34,36 @@ export class HidingSpotView {
 
   private draw(scene: Phaser.Scene) {
     const { W, H } = HidingSpotView;
-    const hw = W / 2;
-    const hh = H / 2;
-
     // Dark "inside" revealed when opened — sits behind the cover.
     const inside = scene.add.rectangle(0, 6, W * 0.82, H * 0.82, 0x241a14);
     this.add(inside);
+
+    if (scene.textures.exists(furnBaseKey(this.spot.kind))) {
+      this.drawImages(scene);
+    } else {
+      this.drawVector(scene);
+    }
+  }
+
+  /** Illustrated path: closed body image + an openable cover image. */
+  private drawImages(scene: Phaser.Scene) {
+    const { W, H } = HidingSpotView;
+    const base = scene.add.image(0, 0, furnBaseKey(this.spot.kind));
+    base.setDisplaySize(W, H);
+    this.add(base);
+    const coverKey = furnCoverKey(this.spot.kind);
+    if (scene.textures.exists(coverKey)) {
+      const cover = scene.add.image(0, 0, coverKey);
+      cover.setDisplaySize(W, H);
+      this.add(cover, true);
+    }
+  }
+
+  /** Original procedural furniture (fallback while art is generated). */
+  private drawVector(scene: Phaser.Scene) {
+    const { W, H } = HidingSpotView;
+    const hw = W / 2;
+    const hh = H / 2;
 
     switch (this.spot.kind) {
       case "wardrobe": {
@@ -59,7 +84,6 @@ export class HidingSpotView {
         this.add(mattress);
         const blanket = scene.add.rectangle(0, hh * 0.18, W * 0.95, H * 0.22, 0xff8fa3);
         this.add(blanket);
-        // Skirt covers the under-bed gap; lifts to reveal.
         const skirt = scene.add.rectangle(0, hh * 0.78, W * 0.95, H * 0.4, 0xc77a55);
         this.add(skirt, true);
         break;
@@ -91,24 +115,36 @@ export class HidingSpotView {
         this.add(rleaf, true);
         break;
       }
+      case "door": {
+        const frame = scene.add.rectangle(0, 0, W * 0.92, H, 0x6b4a2a).setStrokeStyle(8, 0x4a3018);
+        this.add(frame);
+        const panel = scene.add.rectangle(0, 0, W * 0.7, H * 0.9, 0xb07b46).setStrokeStyle(4, 0x6b4a2a);
+        const knob = scene.add.circle(W * 0.24, 0, 8, 0xffd24a);
+        this.add(panel, true);
+        this.add(knob, true);
+        break;
+      }
+      case "sofa": {
+        const back = scene.add.rectangle(0, -hh * 0.18, W, H * 0.5, 0x4a78c0);
+        this.add(back);
+        const seat = scene.add.rectangle(0, hh * 0.2, W, H * 0.5, 0x5a8bd6).setStrokeStyle(5, 0x3a5f9e);
+        this.add(seat);
+        const cushion = scene.add.rectangle(0, hh * 0.55, W * 0.98, H * 0.4, 0x6f9ce0);
+        this.add(cushion, true);
+        break;
+      }
+      case "bookshelf": {
+        const body = scene.add.rectangle(0, 0, W, H, 0x7a4f2a).setStrokeStyle(6, 0x533418);
+        this.add(body);
+        for (let i = -1; i <= 1; i++) {
+          const shelf = scene.add.rectangle(0, i * (H * 0.3), W * 0.9, 8, 0x533418);
+          this.add(shelf);
+        }
+        const books = scene.add.rectangle(0, 0, W * 0.84, H * 0.92, 0xcf6a3a).setStrokeStyle(4, 0x9c4a22);
+        this.add(books, true);
+        break;
+      }
     }
-  }
-
-  /** Subtle wiggle hint that Burhan is in here. */
-  startPeek(scene: Phaser.Scene) {
-    if (this.peekTween || this.checked) return;
-    this.peekTween = scene.tweens.add({
-      targets: this.container,
-      angle: { from: -1.5, to: 1.5 },
-      duration: 160,
-      yoyo: true,
-      repeat: 1,
-      ease: "Sine.inOut",
-      onComplete: () => {
-        this.container.angle = 0;
-        this.peekTween = undefined;
-      },
-    });
   }
 
   /**
@@ -117,8 +153,8 @@ export class HidingSpotView {
    */
   open(scene: Phaser.Scene): Promise<void> {
     this.checked = true;
-    this.peekTween?.stop();
     this.container.angle = 0;
+    const v = SPOT_VISUAL[this.spot.kind];
     return new Promise((resolve) => {
       const targets = this.cover;
       if (targets.length === 0) {
@@ -129,21 +165,14 @@ export class HidingSpotView {
       const done = () => {
         if (--pending === 0) resolve();
       };
+      const twoCover = targets.length > 1;
       targets.forEach((t, i) => {
         const obj = t as Phaser.GameObjects.Components.Transform &
           Phaser.GameObjects.Components.Alpha &
           Phaser.GameObjects.GameObject;
-        const goLeft = i === 0 && targets.length > 1;
-        const slideX =
-          this.spot.kind === "wardrobe" || this.spot.kind === "curtain"
-            ? (goLeft ? -120 : 120)
-            : 0;
-        const slideY =
-          this.spot.kind === "toybox"
-            ? -120
-            : this.spot.kind === "bed" || this.spot.kind === "plant"
-              ? 40
-              : 0;
+        const goLeft = i === 0 && twoCover;
+        const slideX = twoCover ? (goLeft ? -v.openSlide.x : v.openSlide.x) : v.openSlide.x;
+        const slideY = v.openSlide.y;
         scene.tweens.add({
           targets: obj,
           x: (obj as any).x + slideX,

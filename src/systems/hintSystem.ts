@@ -1,17 +1,20 @@
 import Phaser from "phaser";
 import { GAME_WIDTH, GAME_HEIGHT, CONFIG } from "../config";
 import { type House, roomDistance } from "../house/types";
-import type { HidingSpotView } from "../objects/HidingSpotView";
+import type { BurhanActor } from "../objects/BurhanActor";
 import { playGiggle } from "../audio/sfx";
 
-/** Everything the hint system needs to read from the live search round. */
+/**
+ * Everything the hint system needs to read from the live search round. Burhan's
+ * location is read through getters because he can relocate mid-round.
+ */
 export interface HintContext {
   house: House;
-  hideRoomId: string;
-  hideSpotId: string;
+  getHideRoomId: () => string;
   getCurrentRoomId: () => string;
   getTriesLeft: () => number;
-  getSpotViews: () => HidingSpotView[];
+  /** The live Burhan when the player is in his room (for the peek hint). */
+  getBurhan: () => BurhanActor | undefined;
 }
 
 /** Warm = close to Burhan, cool = far. A wordless "hot/cold" screen tint. */
@@ -70,15 +73,16 @@ export class HintSystem {
     const cur = this.distance();
     return (
       Number.isFinite(cur) &&
-      roomDistance(this.ctx.house, toRoomId, this.ctx.hideRoomId) < cur
+      roomDistance(this.ctx.house, toRoomId, this.ctx.getHideRoomId()) < cur
     );
   }
 
-  private distance(): number {
+  /** Room-distance from the player to Burhan right now (0 = same room). */
+  distance(): number {
     return roomDistance(
       this.ctx.house,
       this.ctx.getCurrentRoomId(),
-      this.ctx.hideRoomId,
+      this.ctx.getHideRoomId(),
     );
   }
 
@@ -103,10 +107,7 @@ export class HintSystem {
     if (dist === 0) {
       playGiggle(Math.min(0.8, h.inRoomGiggleIntensity * esc), 0);
       if (Math.random() < h.inRoomPeekChance * esc) {
-        const correct = this.ctx
-          .getSpotViews()
-          .find((v) => v.spot.id === this.ctx.hideSpotId);
-        correct?.startPeek(this.scene);
+        this.ctx.getBurhan()?.peekOut();
       }
     } else if (Number.isFinite(dist)) {
       // Farther rooms giggle less often and more softly.
@@ -117,8 +118,8 @@ export class HintSystem {
     }
   }
 
-  /** Stereo pan toward the door that leads closer to Burhan. */
-  private panTowardBurhan(): number {
+  /** Stereo pan toward the door that leads closer to Burhan (also used by Call). */
+  panTowardBurhan(): number {
     const room = this.ctx.house.rooms.find(
       (r) => r.id === this.ctx.getCurrentRoomId(),
     );
@@ -126,7 +127,11 @@ export class HintSystem {
     let best = Number.POSITIVE_INFINITY;
     let bestSide: "left" | "right" = "left";
     for (const door of room.doors) {
-      const d = roomDistance(this.ctx.house, door.toRoomId, this.ctx.hideRoomId);
+      const d = roomDistance(
+        this.ctx.house,
+        door.toRoomId,
+        this.ctx.getHideRoomId(),
+      );
       if (d < best) {
         best = d;
         bestSide = door.side;

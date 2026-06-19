@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { GAME_WIDTH, GAME_HEIGHT, COLORS } from "../config";
+import { GAME_WIDTH, GAME_HEIGHT, COLORS, TEXT } from "../config";
 import { unlock } from "../audio/sfx";
 
 /**
@@ -16,8 +16,20 @@ export class TitleScene extends Phaser.Scene {
   create() {
     const cx = GAME_WIDTH / 2;
 
+    // Title.
+    this.add
+      .text(cx, GAME_HEIGHT * 0.1, TEXT.title, {
+        fontFamily: "Arial, sans-serif",
+        fontSize: "72px",
+        color: "#ffffff",
+        fontStyle: "bold",
+        stroke: "#2a1c10",
+        strokeThickness: 10,
+      })
+      .setOrigin(0.5);
+
     // Waving Burhan.
-    const burhan = this.add.image(cx, GAME_HEIGHT * 0.34, "burhan").setScale(0.7);
+    const burhan = this.add.image(cx, GAME_HEIGHT * 0.4, "burhan").setScale(0.7);
     burhan.setOrigin(0.5, 0.5);
     this.tweens.add({
       targets: burhan,
@@ -42,6 +54,18 @@ export class TitleScene extends Phaser.Scene {
     circle.fillStyle(COLORS.text, 1);
     circle.fillTriangle(-28, -42, -28, 42, 56, 0);
     button.add([circle]);
+    button.add(
+      this.add
+        .text(0, radius + 30, TEXT.play, {
+          fontFamily: "Arial, sans-serif",
+          fontSize: "40px",
+          color: "#ffffff",
+          fontStyle: "bold",
+          stroke: "#2a1c10",
+          strokeThickness: 7,
+        })
+        .setOrigin(0.5),
+    );
     button.setSize(radius * 2, radius * 2);
     button.setInteractive({ useHandCursor: true });
 

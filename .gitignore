@@ -10,3 +10,13 @@ dev-dist/
 *.apk
 *.aab
 *.keystore
+
+# Asset-generation inputs: keep the README, ignore the actual photos / refs.
+assets-src/burhan-photos/*
+!assets-src/burhan-photos/README.md
+assets-src/sprite-sheet/*
+!assets-src/sprite-sheet/README.md
+
+# Python tooling
+__pycache__/
+*.pyc
