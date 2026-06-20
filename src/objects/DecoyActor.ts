@@ -17,13 +17,14 @@ export class DecoyActor {
   constructor(scene: Phaser.Scene, view: HidingSpotView, kind: DecoyKind) {
     this.scene = scene;
     const tex = kind === "kid" ? "decoy-kid" : "decoy-pet";
-    // Feet on the spot's floor line; scale to a fraction of the furniture height.
+    // Feet on the spot's floor line; scale to a fraction of the hider height so
+    // the decoy tucks behind the same furniture (pets are smaller than kids).
     this.home = { x: view.spot.x, y: view.spot.y };
-    const frac = kind === "pet" ? 0.42 : 0.66;
+    const frac = kind === "pet" ? 0.56 : 0.82;
     this.sprite = scene.add
       .sprite(this.home.x, this.home.y, tex)
       .setOrigin(0.5, 1);
-    this.sprite.setScale((view.displayH * frac) / this.sprite.height);
+    this.sprite.setScale((view.hideHeight() * frac) / this.sprite.height);
   }
 
   setDepth(d: number) {

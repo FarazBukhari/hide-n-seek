@@ -1,78 +1,51 @@
 import type { House, Room, HidingSpot, Door } from "../house/types";
-import {
-  ROOM_TEMPLATES,
-  LANE_X,
-  ALL_LANES,
-  type Lane,
-  type RoomTemplate,
-  type SlotTemplate,
-} from "./roomTemplates";
+import { ROOM_LAYOUTS, ROOM_TYPES, type RoomLayout } from "./roomTemplates";
 import { Rng, nextSeed } from "./rng";
 
 // Procedurally builds a house each round: 4–6 rooms connected in a chain (each
 // room has a left door to the previous room and a right door to the next), with
-// randomized room types, backgrounds, and furniture. Produces the same `House`
-// shape the rest of the game already consumes.
+// randomized room types. Each room's hiding spots are the furniture already
+// painted into its illustrated background (see roomTemplates.ts), so the spots
+// are fixed per room *type* but the room order, types, and where Burhan hides
+// still vary every round. Produces the `House` shape the rest of the game
+// already consumes.
 
 const MIN_ROOMS = 4;
 const MAX_ROOMS = 6;
-const MIN_SPOTS = 4;
-const MAX_SPOTS = 5;
 
 /** Pick room types, avoiding the same type twice in a row so neighbours differ. */
-function pickTypes(rng: Rng, count: number): RoomTemplate[] {
-  const result: RoomTemplate[] = [];
-  let prev: RoomTemplate | null = null;
+function pickTypes(rng: Rng, count: number): RoomLayout[] {
+  const layouts = ROOM_TYPES.map((t) => ROOM_LAYOUTS[t]);
+  const result: RoomLayout[] = [];
+  let prev: RoomLayout | null = null;
   for (let i = 0; i < count; i++) {
-    let t: RoomTemplate;
+    let t: RoomLayout;
     do {
-      t = rng.pick(ROOM_TEMPLATES);
-    } while (prev && t.type === prev.type && ROOM_TEMPLATES.length > 1);
+      t = rng.pick(layouts);
+    } while (prev && t.type === prev.type && layouts.length > 1);
     result.push(t);
     prev = t;
   }
   return result;
 }
 
-/** Choose several hiding spots for a room, one per lane so they never overlap. */
-function genSpots(rng: Rng, roomId: string, template: RoomTemplate): HidingSpot[] {
-  // Group candidate slots by lane.
-  const byLane = new Map<Lane, SlotTemplate[]>();
-  for (const slot of template.slots) {
-    const list = byLane.get(slot.lane) ?? [];
-    list.push(slot);
-    byLane.set(slot.lane, list);
-  }
-
-  const availableLanes = rng.shuffle(ALL_LANES.filter((l) => byLane.has(l)));
-  const count = Math.min(availableLanes.length, rng.int(MIN_SPOTS, MAX_SPOTS));
-
-  const spots: HidingSpot[] = [];
-  for (let i = 0; i < count; i++) {
-    const lane = availableLanes[i];
-    const slot = rng.pick(byLane.get(lane)!);
-    spots.push({
-      id: `${roomId}-${slot.kind}-${i}`,
-      kind: slot.kind,
-      x: LANE_X[lane],
-      y: slot.y,
-    });
-  }
-  return spots;
+/** A room's hiding spots are its background's painted furniture (fixed layout). */
+function genSpots(roomId: string, layout: RoomLayout): HidingSpot[] {
+  return layout.spots.map((s, i) => ({ ...s, id: `${roomId}-${s.kind}-${i}` }));
 }
 
 export function generateHouse(seed: number = nextSeed()): House {
   const rng = new Rng(seed);
   const count = rng.int(MIN_ROOMS, MAX_ROOMS);
-  const templates = pickTypes(rng, count);
+  const layouts = pickTypes(rng, count);
 
-  const rooms: Room[] = templates.map((template, i) => {
+  const rooms: Room[] = layouts.map((layout, i) => {
     const id = `room${i}`;
     return {
       id,
-      type: template.type,
-      bgColor: rng.pick(template.bgColors),
-      spots: genSpots(rng, id, template),
+      type: layout.type,
+      bgColor: rng.pick(layout.bgColors),
+      spots: genSpots(id, layout),
       doors: [] as Door[],
     };
   });

@@ -161,18 +161,23 @@ export class SearchScene extends Phaser.Scene {
       this.roomLayer.add([bg, floor]);
     }
 
-    // Hiding spots (furniture occludes the actors behind it).
+    // Hiding spots are the room's own painted furniture. Build the views (which
+    // each carry an occluder cut from the background), but DON'T add them to the
+    // layer yet — actors must be inserted first so they render *behind* the
+    // furniture (Phaser containers paint children in insertion order).
     for (const spot of room.spots) {
-      const view = new HidingSpotView(this, spot);
-      view.container.setDepth(5);
+      const view = new HidingSpotView(this, spot, bgKey(room.type));
       view.container.on("pointerdown", () => this.checkSpot(view));
-      this.roomLayer.add(view.container);
       this.spotViews.push(view);
     }
 
+    // Actors go in next — above the background, below the occluders.
     this.spawnActorsForRoom();
 
-    // Door arrows.
+    // Now lay the furniture occluders on top, so hiders are tucked behind them.
+    for (const view of this.spotViews) this.roomLayer.add(view.container);
+
+    // Door arrows (topmost of the room layer).
     for (const door of room.doors) {
       this.roomLayer.add(this.makeDoorArrow(door.side, door.toRoomId));
     }
@@ -188,7 +193,6 @@ export class SearchScene extends Phaser.Scene {
         this.spawnBurhanAt(view);
       } else if (this.decoys.has(view.spot.id)) {
         const decoy = new DecoyActor(this, view, this.decoys.get(view.spot.id)!);
-        decoy.setDepth(3);
         this.roomLayer.add(decoy.sprite);
         view.container.setData("decoy", decoy);
       }
@@ -197,8 +201,7 @@ export class SearchScene extends Phaser.Scene {
 
   private spawnBurhanAt(view: HidingSpotView) {
     const b = new BurhanActor(this, view.spot.x, view.spot.y);
-    b.setDepth(3);
-    b.hideAt(view, view.spot.kind);
+    b.hideAt(view);
     b.makeTappable(() => this.grabBurhan(view));
     this.roomLayer.add(b.sprite);
     this.burhan = b;
@@ -340,6 +343,7 @@ export class SearchScene extends Phaser.Scene {
     if (this.decoys.has(view.spot.id)) {
       void view.open(this).then(() => {
         const decoy = view.container.getData("decoy") as DecoyActor | undefined;
+        if (decoy) this.roomLayer.bringToTop(decoy.sprite);
         void decoy?.reveal();
         playGiggle(0.5, this.hints.panTowardBurhan());
         if (CONFIG.decoys.costsTry) {
@@ -390,6 +394,7 @@ export class SearchScene extends Phaser.Scene {
     const finish = () =>
       this.time.delayedCall(1500, () => this.scene.start("Result", { found: true }));
     if (this.burhan) {
+      this.roomLayer.bringToTop(this.burhan.sprite);
       void this.burhan.popFound().then(finish);
     } else {
       const p = view.popOutPoint();
@@ -411,6 +416,7 @@ export class SearchScene extends Phaser.Scene {
       const view = this.spotViews.find((v) => v.spot.id === this.hideSpotId)!;
       void view.open(this).then(() => {
         if (this.burhan) {
+          this.roomLayer.bringToTop(this.burhan.sprite);
           void this.burhan.popFound();
         } else {
           const p = view.popOutPoint();
@@ -473,6 +479,7 @@ export class SearchScene extends Phaser.Scene {
       const b = this.burhan;
       this.burhan = undefined;
       this.peekTimer?.remove();
+      this.roomLayer.bringToTop(b.sprite); // sneak in front of the furniture
       b.ghostRunTo(exitX, () => {
         b.destroy();
         apply();
