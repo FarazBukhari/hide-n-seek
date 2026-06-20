@@ -91,21 +91,25 @@ export const CONFIG = {
  * cover moves to reveal him.
  */
 export interface SpotVisual {
+  /** Offset of the hidden Burhan from the spot's floor point (px). */
   hide: { dx: number; dy: number };
+  /** Extra delta he slides by when peeking so an edge becomes visible (px). */
   peek: { dx: number; dy: number };
+  /** Burhan's hidden height as a fraction of the furniture's display height. */
   scale: number;
+  /** Direction the cover moves to reveal him. */
   openSlide: { x: number; y: number };
 }
 
 export const SPOT_VISUAL: Record<SpotKind, SpotVisual> = {
-  wardrobe: { hide: { dx: 0, dy: -6 }, peek: { dx: -46, dy: 0 }, scale: 0.42, openSlide: { x: 120, y: 0 } },
-  bed: { hide: { dx: 58, dy: 22 }, peek: { dx: 26, dy: 30 }, scale: 0.4, openSlide: { x: 0, y: 40 } },
-  curtain: { hide: { dx: -66, dy: -4 }, peek: { dx: -44, dy: 0 }, scale: 0.42, openSlide: { x: 120, y: 0 } },
-  toybox: { hide: { dx: 0, dy: -28 }, peek: { dx: 0, dy: -48 }, scale: 0.4, openSlide: { x: 0, y: -120 } },
-  plant: { hide: { dx: 0, dy: -8 }, peek: { dx: -42, dy: -6 }, scale: 0.42, openSlide: { x: 0, y: 40 } },
-  door: { hide: { dx: -64, dy: -6 }, peek: { dx: -48, dy: 0 }, scale: 0.42, openSlide: { x: 120, y: 0 } },
-  sofa: { hide: { dx: 0, dy: 14 }, peek: { dx: 0, dy: -30 }, scale: 0.4, openSlide: { x: 0, y: 40 } },
-  bookshelf: { hide: { dx: -58, dy: -6 }, peek: { dx: -46, dy: 0 }, scale: 0.42, openSlide: { x: 120, y: 0 } },
+  wardrobe: { hide: { dx: 0, dy: 0 }, peek: { dx: -100, dy: 0 }, scale: 0.82, openSlide: { x: 130, y: 0 } },
+  bed: { hide: { dx: 40, dy: 0 }, peek: { dx: 95, dy: 0 }, scale: 0.6, openSlide: { x: 0, y: 70 } },
+  curtain: { hide: { dx: -55, dy: 0 }, peek: { dx: -100, dy: 0 }, scale: 0.8, openSlide: { x: 130, y: 0 } },
+  toybox: { hide: { dx: 0, dy: 0 }, peek: { dx: 0, dy: -85 }, scale: 0.66, openSlide: { x: 0, y: -130 } },
+  plant: { hide: { dx: 0, dy: 0 }, peek: { dx: -85, dy: 0 }, scale: 0.78, openSlide: { x: 0, y: 70 } },
+  door: { hide: { dx: -55, dy: 0 }, peek: { dx: -100, dy: 0 }, scale: 0.85, openSlide: { x: 130, y: 0 } },
+  sofa: { hide: { dx: 0, dy: 0 }, peek: { dx: 0, dy: -70 }, scale: 0.66, openSlide: { x: 0, y: 70 } },
+  bookshelf: { hide: { dx: -55, dy: 0 }, peek: { dx: -95, dy: 0 }, scale: 0.82, openSlide: { x: 130, y: 0 } },
 };
 
 /** Minimal on-screen text (the game is no longer fully wordless). */

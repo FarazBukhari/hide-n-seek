@@ -19,12 +19,30 @@ export type SpotKind =
   | "sofa"
   | "bookshelf";
 
+/** A screen-space rectangle in design pixels (1280x720), used for occluders. */
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export interface HidingSpot {
   id: string;
   kind: SpotKind;
   /** Position within the room, in design pixels (GAME_WIDTH x play area). */
   x: number;
   y: number;
+  /**
+   * Furniture-front region (in 1280x720 screen coords) cut from the room
+   * background and drawn *over* the hider, so they read as tucked **behind** the
+   * room's own painted furniture. Absent in the procedural-fallback path.
+   */
+  occluder?: Rect;
+  /** How far the hider leans when peeking so an edge clears the furniture (px). */
+  peek?: { dx: number; dy: number };
+  /** The hider's concealed height in design px (overrides the per-kind default). */
+  hideHeight?: number;
 }
 
 export type Side = "left" | "right";

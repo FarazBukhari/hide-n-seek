@@ -1,6 +1,5 @@
 import Phaser from "phaser";
-import { SPOT_VISUAL, CONFIG } from "../config";
-import type { SpotKind } from "../house/types";
+import { CONFIG } from "../config";
 import type { HidingSpotView } from "./HidingSpotView";
 import type { BurhanAnim } from "../assets/manifest";
 import { playGiggle } from "../audio/sfx";
@@ -18,7 +17,7 @@ export class BurhanActor {
   readonly sprite: Phaser.GameObjects.Sprite;
   private scene: Phaser.Scene;
   private home = { x: 0, y: 0 };
-  private kind: SpotKind = "wardrobe";
+  private peek = { dx: 0, dy: 0 };
   private peeking = false;
   private peekTween?: Phaser.Tweens.Tween;
 
@@ -57,22 +56,16 @@ export class BurhanActor {
 
   // --- hiding ---------------------------------------------------------------
   /** Tuck Burhan behind a hiding spot, mostly occluded, in a believable pose. */
-  hideAt(view: HidingSpotView, kind: SpotKind) {
-    this.kind = kind;
-    const v = SPOT_VISUAL[kind];
-    // Stand on the furniture's floor line, nudged by the per-kind hide offset.
-    const footY = view.spot.y + 110;
-    this.home = { x: view.spot.x + v.hide.dx, y: footY + v.hide.dy };
+  hideAt(view: HidingSpotView) {
+    this.peek = view.peekDelta();
+    // Feet on the furniture's floor line; the spot's own anchor is exact.
+    this.home = { x: view.spot.x, y: view.spot.y };
     this.sprite.setPosition(this.home.x, this.home.y);
-    this.sprite.setScale(v.scale);
+    // Scale so he tucks fully behind the furniture (stays occluded).
+    this.sprite.setScale(view.hideHeight() / this.sprite.height);
     this.sprite.setAlpha(1);
-    this.sprite.setFlipX(v.peek.dx > 0);
+    this.sprite.setFlipX(this.peek.dx > 0);
     this.play("crouch");
-  }
-
-  /** Re-home to a spot without animating (used after a relocation). */
-  moveHomeTo(view: HidingSpotView, kind: SpotKind) {
-    this.hideAt(view, kind);
   }
 
   // --- peeking (hint + peek-and-grab) --------------------------------------
@@ -84,13 +77,12 @@ export class BurhanActor {
   peekOut() {
     if (this.peeking) return;
     this.peeking = true;
-    const v = SPOT_VISUAL[this.kind];
     this.play("peek");
     playGiggle(0.5);
     this.peekTween = this.scene.tweens.add({
       targets: this.sprite,
-      x: this.home.x + v.peek.dx,
-      y: this.home.y + v.peek.dy,
+      x: this.home.x + this.peek.dx,
+      y: this.home.y + this.peek.dy,
       duration: 240,
       ease: "Back.out",
       hold: CONFIG.peek.windowMs,

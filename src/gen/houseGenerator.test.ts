@@ -22,12 +22,14 @@ describe("generateHouse", () => {
     }
   });
 
-  it("gives each room 3-4 hiding spots that never share a lane (x)", () => {
+  it("gives each room hiding spots at distinct x positions (no overlap)", () => {
     for (const seed of SEEDS) {
       const h = generateHouse(seed);
       for (const room of h.rooms) {
-        expect(room.spots.length).toBeGreaterThanOrEqual(3);
-        expect(room.spots.length).toBeLessThanOrEqual(4);
+        // Spots are the room's painted furniture: every type has at least two,
+        // the richest (hallway) has five.
+        expect(room.spots.length).toBeGreaterThanOrEqual(2);
+        expect(room.spots.length).toBeLessThanOrEqual(5);
         const xs = room.spots.map((s) => s.x);
         expect(new Set(xs).size).toBe(xs.length); // no overlap
       }
